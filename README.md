@@ -29,7 +29,7 @@ git clone https://gitlab.com/nsnam/ns-3-dev ns-3-dev
 cd ns-3-dev/src
 ```
 
-Then, clone the mmwave module and patch the LTE one:
+Then, clone the quic module:
 ```bash
 git clone https://github.com/signetlabdei/quic quic
 ```
