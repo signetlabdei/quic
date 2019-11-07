@@ -675,6 +675,11 @@ protected:
    */
   void ConnectionSucceeded (void);
 
+  /**
+   * \brief Notify Pacing
+   */
+  void NotifyPacingPerformed (void);
+
   // Connections to other layers of the Stack
   Ipv4EndPoint* m_endPoint;      //!< the IPv4 endpoint
   Ipv6EndPoint* m_endPoint6;     //!< the IPv6 endpoint
@@ -734,6 +739,9 @@ protected:
   uint32_t m_numPacketsReceivedSinceLastAckSent;  //!< Number of packets received since last ACK sent
 
   uint32_t m_initialPacketSize; //!< size of the first packet to be sent durin the handshake (at least 1200 bytes, per RFC)
+
+  // Pacing timer
+  Timer m_pacingTimer       {Timer::REMOVE_ON_DESTROY}; //!< Pacing Event
 
   /**
   * \brief Callback pointer for cWnd trace chaining
