@@ -724,6 +724,8 @@ protected:
   TracedValue<Time> m_drainingPeriodTimeout;  //!< Draining Period timeout
   EventId m_sendAckEvent;                     //!< Send ACK timeout event
   EventId m_delAckEvent;                      //!< Delayed ACK timeout event
+  bool m_flushOnClose;                        //!< Control behavior on connection close
+  bool m_closeOnEmpty;                        //!< True if the socket will close after sending the buffered packets
 
   // Congestion Control
   Ptr<QuicSocketState> m_tcb;                     //!< Congestion control informations
