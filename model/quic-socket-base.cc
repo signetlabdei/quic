@@ -955,6 +955,8 @@ QuicSocketBase::SendPendingData (bool withAck)
         {
           m_drainingPeriodEvent.Cancel ();
           SendConnectionClosePacket (0, "Scheduled connection close - no error");
+          NS_LOG_LOGIC (this << " Close Schedule DoClose at time " << Simulator::Now ().GetSeconds () << " to expire at time " << (Simulator::Now () + m_drainingPeriodTimeout.Get ()).GetSeconds ());
+          m_drainingPeriodEvent = Simulator::Schedule (m_drainingPeriodTimeout, &QuicSocketBase::DoClose, this);
         }
       NS_LOG_INFO ("Nothing to send");
       return false;
@@ -1619,14 +1621,10 @@ QuicSocketBase::Close (void)
       else
         {
           m_drainingPeriodEvent.Cancel ();
+          NS_LOG_LOGIC (this << " Close Schedule DoClose at time " << Simulator::Now ().GetSeconds () << " to expire at time " << (Simulator::Now () + m_drainingPeriodTimeout.Get ()).GetSeconds ());
+          m_drainingPeriodEvent = Simulator::Schedule (m_drainingPeriodTimeout, &QuicSocketBase::DoClose, this);
           SendConnectionClosePacket (0, "Scheduled connection close - no error");
         }
-      NS_LOG_LOGIC (
-        this << " Close Schedule DoClose at time " << Simulator::Now ().GetSeconds () << " to expire at time " << (Simulator::Now () + m_drainingPeriodTimeout.Get ()).GetSeconds ());
-      m_drainingPeriodEvent = Simulator::Schedule (m_drainingPeriodTimeout,
-                                                   &QuicSocketBase::DoClose,
-                                                   this);
-      SendConnectionClosePacket (0, "Scheduled connection close - no error");
     }
   else if (m_idleTimeoutEvent.IsExpired () and m_socketState != CLOSING
            and m_socketState != IDLE and m_socketState != LISTENING) //Connection Close due to Idle Period termination
