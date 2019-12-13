@@ -197,6 +197,7 @@ QuicSocketTxBuffer::Add (Ptr<Packet> p)
           m_appSize += p->GetSize ();
 
           NS_LOG_INFO ("Update: Application Size = " << m_appSize << ", offset " << qsb.GetOffset ());
+          OnApplicationWrite ();
           return true;
         }
       else
@@ -480,6 +481,7 @@ QuicSocketTxBuffer::OnAckUpdate (
               newlyAcked.push_back ((*sent_it));
             }
 
+          UpdateRateSample(*sent_it);
         }
     }
   NS_LOG_LOGIC ("Mark lost packets");
@@ -641,6 +643,22 @@ QuicSocketTxBuffer::DetectLostPackets ()
   return lost;
 }
 
+uint32_t
+QuicSocketTxBuffer::GetLost ()
+{
+  NS_LOG_FUNCTION (this);
+  uint32_t lostCount = 0;
+  for (auto sent_it = m_sentList.begin ();
+       sent_it != m_sentList.end() and !m_sentList.empty (); ++sent_it)
+    {
+      if ((*sent_it)->m_lost)
+        {
+          lostCount += (*sent_it)->m_packet->GetSize ();
+        }
+    }
+  return lostCount;
+}
+
 void
 QuicSocketTxBuffer::CleanSentList ()
 {
@@ -754,6 +772,129 @@ QuicSocketTxBuffer::BytesInFlight () const
                                           << " m_appSize " << m_appSize);
   return inFlight;
 
+}
+
+void
+QuicSocketTxBuffer::SetQuicSocketState (Ptr<QuicSocketState> tcb)
+{
+  NS_LOG_FUNCTION (this);
+  m_tcb = tcb;
+}
+
+void
+QuicSocketTxBuffer::UpdatePacketSent (SequenceNumber32 seq, uint32_t sz)
+{
+  NS_LOG_FUNCTION (this << seq << sz);
+
+  if (m_tcb == nullptr or sz == 0)
+    {
+      return;
+    }
+
+  if (m_tcb->m_bytesInFlight.Get () == 0)
+    {
+      m_tcb->m_firstSentTime = Simulator::Now ();
+      m_tcb->m_deliveredTime = Simulator::Now ();
+    }
+
+  QuicSocketTxItem *item = nullptr;
+  for (auto it = m_sentList.rbegin (); it != m_sentList.rend (); ++it)
+    {
+      if ((*it)->m_packetNumber == seq)
+        {
+          item = *it;
+          break;
+        }
+    }
+  NS_ASSERT_MSG (item != nullptr, "not found seq " << seq);
+  item->m_firstSentTime = m_tcb->m_firstSentTime;
+  item->m_deliveredTime = m_tcb->m_deliveredTime;
+  item->m_isAppLimited  = (m_tcb->m_appLimited != 0);
+  item->m_delivered     = m_tcb->m_delivered;
+}
+
+struct RateSample*
+QuicSocketTxBuffer::GetRateSample ()
+{
+  NS_LOG_FUNCTION (this);
+  return &m_rs;
+}
+
+void
+QuicSocketTxBuffer::UpdateRateSample (QuicSocketTxItem *item)
+{
+  NS_LOG_FUNCTION (this << item);
+
+  if (m_tcb == nullptr or item->m_deliveredTime == Time::Max ())
+    {
+      return;
+    }
+
+  m_tcb->m_delivered         += item->m_packet->GetSize ();;
+  m_tcb->m_deliveredTime      = Simulator::Now ();
+
+  if (item->m_delivered > m_rs.m_priorDelivered)
+    {
+      m_rs.m_priorDelivered   = item->m_delivered;
+      m_rs.m_priorTime        = item->m_deliveredTime;
+      m_rs.m_isAppLimited     = item->m_isAppLimited;
+      m_rs.m_sendElapsed      = item->m_lastSent - item->m_firstSentTime;
+      m_rs.m_ackElapsed       = m_tcb->m_deliveredTime - item->m_deliveredTime;
+      m_tcb->m_firstSentTime  = item->m_lastSent;
+    }
+
+  item->m_deliveredTime = Time::Max ();
+  m_tcb->m_txItemDelivered = item->m_delivered;
+}
+
+bool
+QuicSocketTxBuffer::GenerateRateSample ()
+{
+  NS_LOG_FUNCTION (this);
+
+  if (m_tcb == nullptr)
+    {
+      return false;
+    }
+
+  if (m_tcb->m_appLimited and m_tcb->m_delivered > m_tcb->m_appLimited)
+    {
+      m_tcb->m_appLimited = 0;
+    }
+
+  if (m_rs.m_priorTime == Seconds (0))
+    {
+      return false;
+    }
+
+  m_rs.m_interval = std::max (m_rs.m_sendElapsed, m_rs.m_ackElapsed);
+
+  m_rs.m_delivered = m_tcb->m_delivered - m_rs.m_priorDelivered;
+
+  if (m_rs.m_interval < m_tcb->m_minRtt)
+    {
+      m_rs.m_interval = Seconds (0);
+      return false;
+    }
+
+  if (m_rs.m_interval != Seconds (0))
+    {
+      m_rs.m_deliveryRate = DataRate (m_rs.m_delivered * 8.0 / m_rs.m_interval.GetSeconds ());
+    }
+  NS_LOG_DEBUG ("computed delivery rate: " << m_rs.m_deliveryRate);
+  return true;
+}
+
+void
+QuicSocketTxBuffer::OnApplicationWrite ()
+{
+  if (m_tcb != nullptr and
+      m_appSize < m_tcb->m_segmentSize and
+      m_tcb->m_bytesInFlight.Get () < m_tcb->m_cWnd)
+    {
+      NS_LOG_LOGIC("Connection is Application-Limited");
+      m_tcb->m_appLimited = m_tcb->m_delivered + m_tcb->m_bytesInFlight.Get () ? : 1U;
+    }
 }
 
 }

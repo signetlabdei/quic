@@ -114,6 +114,14 @@ public:
   Time m_kDefaultInitialRtt;                    //!< The default RTT used before an RTT sample is taken.
   uint32_t m_kMaxPacketsReceivedBeforeAckSend;  //!< The number of packets to be received before an ACK is triggered
 
+  // RateSample variables of interest
+  uint64_t               m_delivered       {0};              //!< The total amount of data in bytes delivered so far
+  Time                   m_deliveredTime   {Seconds (0)};    //!< Simulator time when m_delivered was last updated
+  Time                   m_firstSentTime   {Seconds (0)};    //!< The send time of the packet that was most recently marked as delivered
+  uint32_t               m_appLimited      {0};              //!< The index of the last transmitted packet marked as application-limited
+  uint32_t               m_txItemDelivered {0};              //!< TODO: previous amount of data (in bytes) delivered bla bla
+  uint32_t               m_lastAckedSackedBytes {0};         //!< Size of data sacked in the last ack
+
 };
 
 /**

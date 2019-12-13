@@ -490,6 +490,7 @@ QuicSocketBase::QuicSocketBase (void)
   m_tcb->m_cWnd = m_tcb->m_initialCWnd;
   m_tcb->m_ssThresh = m_tcb->m_initialSsThresh;
   m_quicCongestionControlLegacy = false;
+  m_txBuffer->SetQuicSocketState(m_tcb);
 
   m_tcb->m_currentPacingRate = m_tcb->m_maxPacingRate;
   m_pacingTimer.SetFunction (&QuicSocketBase::NotifyPacingPerformed, this);
@@ -588,6 +589,7 @@ QuicSocketBase::QuicSocketBase (const QuicSocketBase& sock)   // Copy constructo
       m_congestionControl = sock.m_congestionControl->Fork ();
     }
   m_quicCongestionControlLegacy = sock.m_quicCongestionControlLegacy;
+  m_txBuffer->SetQuicSocketState(m_tcb);
 
   m_tcb->m_currentPacingRate = m_tcb->m_maxPacingRate;
   m_pacingTimer.SetFunction (&QuicSocketBase::NotifyPacingPerformed, this);
@@ -1378,6 +1380,8 @@ QuicSocketBase::SendDataPacket (SequenceNumber32 packetNumber,
     {
       SetReTxTimeout ();
     }
+
+  m_txBuffer->UpdatePacketSent(packetNumber, sz);
   return sz;
 }
 
@@ -2188,6 +2192,13 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
   NS_LOG_FUNCTION (this);
   NS_LOG_INFO ("Process ACK");
 
+  // Generate RateSample
+  struct RateSample * rs = m_txBuffer->GetRateSample ();
+  rs->m_priorInFlight = m_tcb->m_bytesInFlight.Get ();
+
+  uint32_t lostOut = m_txBuffer->GetLost ();
+  uint32_t delivered = m_tcb->m_delivered;
+
   uint32_t previousWindow = m_txBuffer->BytesInFlight ();
   
   std::vector<uint32_t> additionalAckBlocks = sub.GetAdditionalAckBlocks ();
@@ -2206,6 +2217,10 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
 
   // Count newly acked bytes
   uint32_t ackedBytes = previousWindow - m_txBuffer->BytesInFlight ();
+
+  m_txBuffer->GenerateRateSample ();
+  rs->m_packetLoss = std::abs ((int) lostOut - (int) m_txBuffer->GetLost ());
+  m_tcb->m_lastAckedSackedBytes = m_tcb->m_delivered - delivered;
 
   // RTO packet acknowledged - IETF Draft QUIC Recovery, Sec. 4.3.3
   if (m_tcb->m_rtoCount > 0)
