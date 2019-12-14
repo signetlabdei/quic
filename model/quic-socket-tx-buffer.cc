@@ -479,9 +479,9 @@ QuicSocketTxBuffer::OnAckUpdate (
               (*sent_it)->m_sacked = true;
               (*sent_it)->m_ackTime = Now ();
               newlyAcked.push_back ((*sent_it));
+              UpdateRateSample ((*sent_it));
             }
 
-          UpdateRateSample(*sent_it);
         }
     }
   NS_LOG_LOGIC ("Mark lost packets");
@@ -857,7 +857,7 @@ QuicSocketTxBuffer::GenerateRateSample ()
       return false;
     }
 
-  if (m_tcb->m_appLimited and m_tcb->m_delivered > m_tcb->m_appLimited)
+  if (m_tcb->m_appLimited and m_tcb->m_delivered > m_tcb->m_appLimited) //BUG: delivered is in bytes, appLimited is in packets
     {
       m_tcb->m_appLimited = 0;
     }
