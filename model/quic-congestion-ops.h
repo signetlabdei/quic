@@ -94,7 +94,7 @@ public:
    * \param packetNumber the packet number
    * \param isAckOnly a flag to signal if the packet has only an ACK frame
    */
-  void OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, bool isAckOnly);
+  virtual void OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, bool isAckOnly);
 
   /**
    * \brief Method called when an ack is received. It process the received ack and updates 
@@ -103,8 +103,10 @@ public:
    * \param tcb a smart pointer to the SocketState (it accepts a QuicSocketState)
    * \param ack the received ACK
    * \param newAcks the newly acked packets
+   * \param rs the connection RateSample
    */
-  void OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack, std::vector<QuicSocketTxItem*> newAcks);
+  virtual void OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack, std::vector<QuicSocketTxItem*> newAcks,
+                      const struct RateSample *rs);
 
   /**
    * \brief Method called when a packet is lost. It process the lost packets and updates 
@@ -113,7 +115,7 @@ public:
    * \param tcb a smart pointer to the SocketState (it accepts a QuicSocketState)
    * \param lostPackets the lost packets
    */
-  void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem*> lostPackets);
+  virtual void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem*> lostPackets);
 
 protected:
   // QuicCongestionControl Draft10

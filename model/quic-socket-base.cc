@@ -2294,7 +2294,7 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
           NS_LOG_INFO ("Update the variables in the congestion control (QUIC)");
           // Process the ACK
           DynamicCast<QuicCongestionOps> (m_congestionControl)->OnAckReceived (
-            m_tcb, sub, ackedPackets);
+            m_tcb, sub, ackedPackets, rs);
           m_lastRtt = m_tcb->m_lastRtt;
         }
       else
