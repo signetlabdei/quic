@@ -116,10 +116,11 @@ public:
 
   // RateSample variables of interest
   uint64_t               m_delivered       {0};              //!< The total amount of data in bytes delivered so far
-  Time                   m_deliveredTime   {Seconds (0)};    //!< Simulator time when m_delivered was last updated
+  Time                   m_deliveredTime   {Seconds (0)};    //!< Simulation time when m_delivered was last updated
   Time                   m_firstSentTime   {Seconds (0)};    //!< The send time of the packet that was most recently marked as delivered
-  uint32_t               m_appLimited      {0};              //!< The index of the last transmitted packet marked as application-limited
-  uint32_t               m_txItemDelivered {0};              //!< TODO: previous amount of data (in bytes) delivered bla bla
+  uint64_t               m_appLimitedUntil {0};              //!< Connection is application-limited until m_appLimitedUntil > m_delivered
+  uint32_t               m_txItemDelivered {0};              /**< amount of data (in bytes) delivered when last packet
+                                                                  marked asdelivered was first sent */
   uint32_t               m_lastAckedSackedBytes {0};         //!< Size of data sacked in the last ack
 
 };

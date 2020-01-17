@@ -41,7 +41,7 @@ class QuicSocketState;
 struct RateSample
 {
   DataRate      m_deliveryRate;   //!< The delivery rate sample
-  uint32_t      m_isAppLimited;   //!< Indicates whether the rate sample is application-limited
+  bool          m_isAppLimited {false};   //!< Indicates whether the rate sample is application-limited
   Time          m_interval;       //!< The length of the sampling interval
   uint32_t      m_delivered {0};      //!< The amount of data marked as delivered over the sampling interval
   uint32_t      m_priorDelivered {0}; //!< The delivered count of the most recent packet delivered
@@ -268,11 +268,6 @@ public:
    * \brief Calculates delivery rate on arrival of each acknowledgement.
    */
   bool GenerateRateSample ();
-
-  /**
-   * \brief Checks if connection is app-limited upon each write from the application
-   */
-  void OnApplicationWrite ();
 
 private:
   typedef std::list<QuicSocketTxItem*> QuicTxPacketList;  //!< container for data stored in the buffer

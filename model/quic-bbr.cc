@@ -145,16 +145,13 @@ QuicBbr::InitPacingRate (Ptr<QuicSocketState> tcb)
       tcb->m_pacing = true;
     }
   Time rtt = tcb->m_lastRtt != Time::Max () ? tcb->m_lastRtt.Get () : MilliSeconds (1);
-  if (rtt.IsStrictlyPositive ())
+  if (rtt == 0)
     {
-      DataRate nominalBandwidth (tcb->m_initialCWnd * tcb->m_segmentSize * 8 / rtt.GetSeconds ());
-      tcb->m_currentPacingRate = DataRate (m_pacingGain * nominalBandwidth.GetBitRate ());
+      NS_LOG_INFO("No rtt estimate is available, using kDefaultInitialRtt=" << tcb->m_kDefaultInitialRtt);
+      rtt = tcb->m_kDefaultInitialRtt;
     }
-  else
-    {
-      NS_LOG_INFO("No rtt estimate is available, pacing rate set to maxPacingRate " << tcb->m_maxPacingRate);
-      tcb->m_currentPacingRate = tcb->m_maxPacingRate;
-    }
+  DataRate nominalBandwidth (tcb->m_initialCWnd * 8 / rtt.GetSeconds ());
+  tcb->m_currentPacingRate = DataRate (m_pacingGain * nominalBandwidth.GetBitRate ());
   
 }
 
@@ -199,7 +196,7 @@ QuicBbr::InFlight (Ptr<QuicSocketState> tcb, double gain)
   NS_LOG_FUNCTION (this << tcb << gain);
   if (m_rtProp == Time::Max ())
     {
-      return tcb->m_initialCWnd * tcb->m_segmentSize;
+      return tcb->m_initialCWnd;
     }
   double quanta = 3 * m_sendQuantum;
   double estimatedBdp = m_maxBwFilter.GetBest () * m_rtProp / 8.0;
@@ -365,7 +362,7 @@ QuicBbr::HandleProbeRTT (Ptr<QuicSocketState> tcb)
 {
   NS_LOG_FUNCTION (this << tcb);
   
-  tcb->m_appLimited = (tcb->m_delivered + tcb->m_bytesInFlight.Get ()) ?: 1;
+  tcb->m_appLimitedUntil = (tcb->m_delivered + tcb->m_bytesInFlight.Get ()) ?: 1;
 
   if (m_probeRttDoneStamp == Seconds (0) && tcb->m_bytesInFlight <= m_minPipeCwnd)
     {
@@ -480,7 +477,7 @@ QuicBbr::SetCwnd (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
         {
           tcb->m_cWnd = std::min (tcb->m_cWnd.Get () + (uint32_t) tcb->m_lastAckedSackedBytes, m_targetCWnd);
         }
-      else if (tcb->m_cWnd < m_targetCWnd || tcb->m_delivered < tcb->m_initialCWnd * tcb->m_segmentSize)
+      else if (tcb->m_cWnd < m_targetCWnd || tcb->m_delivered < tcb->m_initialCWnd)
         {
           tcb->m_cWnd = tcb->m_cWnd.Get () + tcb->m_lastAckedSackedBytes;
         }
@@ -620,12 +617,12 @@ QuicBbr::CongestionStateSet (Ptr<TcpSocketState> tcb,
       NS_LOG_DEBUG ("CongestionStateSet triggered to CA_OPEN :: " << newState);
       m_rtProp = tcbd->m_lastRtt.Get () != Time::Max () ? tcbd->m_lastRtt.Get () : Time::Max ();
       m_rtPropStamp = Simulator::Now ();
-      m_priorCwnd = tcbd->m_initialCWnd * tcbd->m_segmentSize;
-      m_targetCWnd = tcbd->m_initialCWnd * tcbd->m_segmentSize;
+      m_priorCwnd = tcbd->m_initialCWnd;
+      m_targetCWnd = tcbd->m_initialCWnd;
       m_minPipeCwnd = 4 * tcbd->m_segmentSize;
       m_sendQuantum = 1 * tcbd->m_segmentSize;
       m_maxBwFilter = MaxBandwidthFilter_t (m_bandwidthWindowLength,
-                                            DataRate (tcbd->m_initialCWnd * tcbd->m_segmentSize * 8 / m_rtProp.GetSeconds ())
+                                            DataRate (tcbd->m_initialCWnd * 8 / m_rtProp.GetSeconds ())
                                             , 0);
       InitRoundCounting ();
       InitFullPipe ();
@@ -665,10 +662,10 @@ QuicBbr::CwndEvent (Ptr<TcpSocketState> tcb,
   else if (event == TcpSocketState::CA_EVENT_TX_START)
     {
       NS_LOG_DEBUG ("CwndEvent triggered to CA_EVENT_TX_START :: " << event);
-      if (tcbd->m_bytesInFlight.Get () == 0 && tcbd->m_appLimited)
+      if (tcbd->m_bytesInFlight.Get () == 0 && tcbd->m_appLimitedUntil > tcbd->m_delivered)
         {
           m_idleRestart = true;
-          if (m_state.Get () == BbrMode_t::BBR_PROBE_BW && tcbd->m_appLimited)
+          if (m_state.Get () == BbrMode_t::BBR_PROBE_BW && tcbd->m_appLimitedUntil > tcbd->m_delivered)
             {
               SetPacingRate (tcbd, 1);
             }

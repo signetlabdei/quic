@@ -197,7 +197,6 @@ QuicSocketTxBuffer::Add (Ptr<Packet> p)
           m_appSize += p->GetSize ();
 
           NS_LOG_INFO ("Update: Application Size = " << m_appSize << ", offset " << qsb.GetOffset ());
-          OnApplicationWrite ();
           return true;
         }
       else
@@ -809,7 +808,7 @@ QuicSocketTxBuffer::UpdatePacketSent (SequenceNumber32 seq, uint32_t sz)
   NS_ASSERT_MSG (item != nullptr, "not found seq " << seq);
   item->m_firstSentTime = m_tcb->m_firstSentTime;
   item->m_deliveredTime = m_tcb->m_deliveredTime;
-  item->m_isAppLimited  = (m_tcb->m_appLimited != 0);
+  item->m_isAppLimited  = (m_tcb->m_appLimitedUntil > m_tcb->m_delivered);
   item->m_delivered     = m_tcb->m_delivered;
 }
 
@@ -857,11 +856,6 @@ QuicSocketTxBuffer::GenerateRateSample ()
       return false;
     }
 
-  if (m_tcb->m_appLimited and m_tcb->m_delivered > m_tcb->m_appLimited) //BUG: delivered is in bytes, appLimited is in packets
-    {
-      m_tcb->m_appLimited = 0;
-    }
-
   if (m_rs.m_priorTime == Seconds (0))
     {
       return false;
@@ -883,18 +877,6 @@ QuicSocketTxBuffer::GenerateRateSample ()
     }
   NS_LOG_DEBUG ("computed delivery rate: " << m_rs.m_deliveryRate);
   return true;
-}
-
-void
-QuicSocketTxBuffer::OnApplicationWrite ()
-{
-  if (m_tcb != nullptr and
-      m_appSize < m_tcb->m_segmentSize and
-      m_tcb->m_bytesInFlight.Get () < m_tcb->m_cWnd)
-    {
-      NS_LOG_LOGIC("Connection is Application-Limited");
-      m_tcb->m_appLimited = m_tcb->m_delivered + m_tcb->m_bytesInFlight.Get () ? : 1U;
-    }
 }
 
 }
