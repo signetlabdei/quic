@@ -1274,7 +1274,7 @@ QuicSocketBase::SendDataPacket (SequenceNumber32 packetNumber,
   uint32_t sz = p->GetSize ();
 
   // check whether the connection is appLimited, i.e. not enough data to fill a packet
-  if (sz < maxSize and m_tcb->m_bytesInFlight.Get () < m_tcb->m_cWnd)
+  if (sz < maxSize and m_txBuffer->AppSize() == 0 and m_tcb->m_bytesInFlight.Get () < m_tcb->m_cWnd)
     {
       NS_LOG_LOGIC("Connection is Application-Limited. sz = " << sz << " < maxSize = " << maxSize);
       m_tcb->m_appLimitedUntil = m_tcb->m_delivered + m_tcb->m_bytesInFlight.Get () ? : 1U;
@@ -2270,7 +2270,7 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
         }
       DoRetransmit (lostPackets);
     }
-  else if (ackedBytes > 0)
+  /* else */ if (ackedBytes > 0)
     {
       if (!m_quicCongestionControlLegacy)
         {

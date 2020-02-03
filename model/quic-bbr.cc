@@ -615,7 +615,7 @@ QuicBbr::CongestionStateSet (Ptr<TcpSocketState> tcb,
   if (newState == TcpSocketState::CA_OPEN && !m_isInitialized)
     {
       NS_LOG_DEBUG ("CongestionStateSet triggered to CA_OPEN :: " << newState);
-      m_rtProp = tcbd->m_lastRtt.Get () != Time::Max () ? tcbd->m_lastRtt.Get () : Time::Max ();
+      m_rtProp = tcbd->m_lastRtt.Get () != 0 ? tcbd->m_lastRtt.Get () : Time::Max ();
       m_rtPropStamp = Simulator::Now ();
       m_priorCwnd = tcbd->m_initialCWnd;
       m_targetCWnd = tcbd->m_initialCWnd;
@@ -634,6 +634,7 @@ QuicBbr::CongestionStateSet (Ptr<TcpSocketState> tcb,
     {
       NS_LOG_DEBUG ("CongestionStateSet triggered to CA_LOSS :: " << newState);
       SaveCwnd (tcbd);
+      tcbd->m_cWnd = tcbd->m_segmentSize;
       m_roundStart = true;
     }
   else if (newState == TcpSocketState::CA_RECOVERY)
@@ -701,6 +702,7 @@ QuicBbr::OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, b
   tcbd->m_timeOfLastSentPacket = Now ();
   tcbd->m_highTxMark = packetNumber;
 }
+
 void
 QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
                     std::vector<QuicSocketTxItem *> newAcks,
@@ -721,7 +723,15 @@ QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
   if (lastAcked->m_packetNumber == tcbd->m_largestAckedPacket)
     {
       tcbd->m_lastRtt = Now () - lastAcked->m_lastSent;
-      UpdateRtt (tcbd, tcbd->m_lastRtt, Time (ack.GetAckDelay ()));
+      UpdateRtt (tcbd, tcbd->m_lastRtt, MicroSeconds (ack.GetAckDelay ()));
+    }
+
+  // Precess end of recovery
+  if (tcbd->m_endOfRecovery <= tcbd->m_largestAckedPacket)
+    {
+      tcbd->m_congState = TcpSocketState::CA_OPEN;
+      CongestionStateSet (tcb, TcpSocketState::CA_OPEN);
+      CwndEvent (tcb, TcpSocketState::CA_EVENT_COMPLETE_CWR);
     }
 
   NS_LOG_LOGIC ("Processing acknowledged packets");
@@ -746,16 +756,44 @@ QuicBbr::OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem *>
   auto largestLostPacket = *(lostPackets.end () - 1);
 
   NS_LOG_INFO ("Go in recovery mode");
-  // Start a new recovery epoch if the lost packet is larger than the end of the previous recovery epoch.
-  if (!InRecovery (tcbd, largestLostPacket->m_packetNumber))
+
+  // TCP early retransmit logic [RFC 5827]: enter recovery (RFC 6675, Sec. 5)
+  if (!InRecovery (tcb, largestLostPacket->m_packetNumber))
     {
       tcbd->m_endOfRecovery = tcbd->m_highTxMark;
-      tcbd->m_cWnd *= tcbd->m_kLossReductionFactor;
-      if (tcbd->m_cWnd < tcbd->m_kMinimumWindow)
-        {
-          tcbd->m_cWnd = tcbd->m_kMinimumWindow;
-        }
+      tcbd->m_congState = TcpSocketState::CA_RECOVERY;
+      CongestionStateSet (tcbd, TcpSocketState::CA_RECOVERY);
     }
+}
+
+void
+QuicBbr::OnPacketAcked (Ptr<TcpSocketState> tcb, QuicSocketTxItem &ackedPacket)
+{
+  NS_LOG_FUNCTION (this);
+  Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
+  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+
+  NS_LOG_LOGIC ("Handle possible RTO");
+  // If a packet sent prior to RTO was acked, then the RTO  was spurious. Otherwise, inform congestion control.
+  if (tcbd->m_rtoCount > 0
+      and ackedPacket.m_packetNumber > tcbd->m_largestSentBeforeRto)
+    {
+      OnRetransmissionTimeoutVerified (tcb);
+    }
+  tcbd->m_handshakeCount = 0;
+  tcbd->m_tlpCount = 0;
+  tcbd->m_rtoCount = 0;
+}
+
+void
+QuicBbr::OnRetransmissionTimeoutVerified (Ptr<TcpSocketState> tcb)
+{
+  NS_LOG_FUNCTION (this);
+  Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
+  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_LOG_INFO ("Loss state");
+  tcbd->m_congState = TcpSocketState::CA_LOSS;
+  CongestionStateSet (tcbd, TcpSocketState::CA_LOSS);
 }
 
 Ptr<TcpCongestionOps>

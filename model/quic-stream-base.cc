@@ -21,10 +21,10 @@
  *          Davide Marcato <davidemarcato@outlook.com>
  *          
  */
-
+/*
 #define NS_LOG_APPEND_CONTEXT \
   if (m_node and m_connectionId and (m_streamId >= 0)) { std::clog << " [node " << m_node->GetId () << " socket " << m_connectionId << " stream " << m_streamId << " " << StreamDirectionTypeToString () << "] "; }
-
+*/
 
 #include "ns3/abort.h"
 #include "ns3/node.h"

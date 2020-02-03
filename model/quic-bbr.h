@@ -91,10 +91,10 @@ public:
   virtual void CongestionStateSet (Ptr<TcpSocketState> tcb,
                                    const TcpSocketState::TcpCongState_t newState);
 
-  void OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, bool isAckOnly);
-  void OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
+  virtual void OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, bool isAckOnly);
+  virtual void OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
                       std::vector<QuicSocketTxItem *> newAcks, const struct RateSample *rs);
-  void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem *> lostPackets);
+  virtual void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem *> lostPackets);
 
   virtual void CwndEvent (Ptr<TcpSocketState> tcb,
                           const TcpSocketState::TcpCAEvent_t event);
@@ -105,6 +105,10 @@ public:
   virtual Ptr<TcpCongestionOps> Fork ();
 
 protected:
+
+  void OnPacketAcked (Ptr<TcpSocketState> tcb, QuicSocketTxItem &ackedPacket);
+  virtual void OnRetransmissionTimeoutVerified (Ptr<TcpSocketState> tcb);
+
 
   /**
    * \brief Called when packets are delivered to update cwnd and pacing rate
