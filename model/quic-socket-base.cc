@@ -72,6 +72,7 @@ namespace ns3 {
 NS_LOG_COMPONENT_DEFINE ("QuicSocketBase");
 
 NS_OBJECT_ENSURE_REGISTERED (QuicSocketBase);
+NS_OBJECT_ENSURE_REGISTERED (QuicSocketState);
 
 const uint16_t QuicSocketBase::MIN_INITIAL_PACKET_SIZE = 1200;
 
@@ -348,7 +349,8 @@ QuicSocketState::GetTypeId (void)
                    "The maximum number of packets without sending an ACK",
                    UintegerValue (20),
                    MakeUintegerAccessor (&QuicSocketState::m_kMaxPacketsReceivedBeforeAckSend),
-                   MakeUintegerChecker<uint32_t> ());
+                   MakeUintegerChecker<uint32_t> ())
+  ;
   return tid;
 }
 
@@ -480,7 +482,8 @@ QuicSocketBase::QuicSocketBase (void)
       0),
     m_lastRtt (Seconds(0.0)),
     m_queue_ack (false),
-    m_numPacketsReceivedSinceLastAckSent (0)
+    m_numPacketsReceivedSinceLastAckSent (0),
+    m_pacingTimer (Timer::REMOVE_ON_DESTROY)
 {
   NS_LOG_FUNCTION (this);
 
@@ -492,6 +495,11 @@ QuicSocketBase::QuicSocketBase (void)
   m_tcb->m_cWnd = m_tcb->m_initialCWnd;
   m_tcb->m_ssThresh = m_tcb->m_initialSsThresh;
   m_quicCongestionControlLegacy = false;
+  m_txBuffer->SetQuicSocketState(m_tcb);
+
+  m_tcb->m_currentPacingRate = m_tcb->m_maxPacingRate;
+  m_pacingTimer.SetFunction (&QuicSocketBase::NotifyPacingPerformed, this);
+
   /**
    * [IETF DRAFT 10 - Quic Transport: sec 5.7.1]
    *
@@ -563,6 +571,7 @@ QuicSocketBase::QuicSocketBase (const QuicSocketBase& sock)   // Copy constructo
     m_quicCongestionControlLegacy (sock.m_quicCongestionControlLegacy),
     m_queue_ack (sock.m_queue_ack),
     m_numPacketsReceivedSinceLastAckSent (sock.m_numPacketsReceivedSinceLastAckSent),
+    m_pacingTimer (Timer::REMOVE_ON_DESTROY),
     m_txTrace (sock.m_txTrace),
     m_rxTrace (sock.m_rxTrace)
 {
@@ -586,6 +595,10 @@ QuicSocketBase::QuicSocketBase (const QuicSocketBase& sock)   // Copy constructo
       m_congestionControl = sock.m_congestionControl->Fork ();
     }
   m_quicCongestionControlLegacy = sock.m_quicCongestionControlLegacy;
+  m_txBuffer->SetQuicSocketState(m_tcb);
+
+  m_tcb->m_currentPacingRate = m_tcb->m_maxPacingRate;
+  m_pacingTimer.SetFunction (&QuicSocketBase::NotifyPacingPerformed, this);
 
   /**
    * [IETF DRAFT 10 - Quic Transport: sec 5.7.1]
@@ -624,6 +637,7 @@ QuicSocketBase::~QuicSocketBase (void)
     }
   m_quicl4 = 0;
   //CancelAllTimers ();
+  m_pacingTimer.Cancel ();
 }
 
 /* Inherit from Socket class: Bind socket to an end-point in QuicL4Protocol */
@@ -964,6 +978,18 @@ QuicSocketBase::SendPendingData (bool withAck)
   // prioritize stream 0
   while (m_txBuffer->GetNumFrameStream0InBuffer () > 0)
     {
+      // check pacing timer
+      if (m_tcb->m_pacing)
+        {
+          NS_LOG_DEBUG ("Pacing is enabled");
+          if (m_pacingTimer.IsRunning ())
+            {
+              NS_LOG_INFO ("Skipping Packet due to pacing - for " << m_pacingTimer.GetDelayLeft ());
+              break;
+            }
+          NS_LOG_DEBUG ("Pacing Timer is not running");
+        }
+
       NS_LOG_DEBUG ("Send a frame for stream 0");
       SequenceNumber32 next = ++m_tcb->m_nextTxSequence;
       NS_LOG_INFO ("SN " << m_tcb->m_nextTxSequence);
@@ -978,6 +1004,7 @@ QuicSocketBase::SendPendingData (bool withAck)
                                             << " BufferedSize " << m_txBuffer->AppSize ()
                                             << " MaxPacketSize " << GetSegSize ());
 
+      // uint32_t sz = 
       SendDataPacket (next, 0, m_queue_ack);
 
       win = AvailableWindow ();
@@ -996,6 +1023,18 @@ QuicSocketBase::SendPendingData (bool withAck)
 
   while (availableWindow > 0 and m_txBuffer->AppSize () > 0)
     {
+      // check pacing timer
+      if (m_tcb->m_pacing)
+        {
+          NS_LOG_DEBUG ("Pacing is enabled");
+          if (m_pacingTimer.IsRunning ())
+            {
+              NS_LOG_INFO ("Skipping Packet due to pacing - for " << m_pacingTimer.GetDelayLeft ());
+              break;
+            }
+          NS_LOG_DEBUG ("Pacing Timer is not running");
+        }
+
       // check draining period
       if (m_drainingPeriodEvent.IsRunning ())
         {
@@ -1038,6 +1077,7 @@ QuicSocketBase::SendPendingData (bool withAck)
                                    << " BufferedSize " << m_txBuffer->AppSize ()
                                    << " MaxPacketSize " << GetSegSize ());
 
+      // uint32_t sz = 
       SendDataPacket (next, s, withAck);
 
       win = AvailableWindow ();
@@ -1053,7 +1093,6 @@ QuicSocketBase::SendPendingData (bool withAck)
       ++nPacketsSent;
 
       availableWindow = AvailableWindow ();
-
     }
 
   if (nPacketsSent > 0)
@@ -1221,6 +1260,8 @@ QuicSocketBase::SendAck ()
   //     NS_FATAL_ERROR("ACK not possible in this state");
   //   }
 
+  m_txBuffer->UpdateAckSent (packetNumber, p->GetSerializedSize () + head.GetSerializedSize ());
+
   NS_LOG_INFO ("Send ACK packet with header " << head);
   m_quicl4->SendPacket (this, p, head);
   m_txTrace (p, head, this);
@@ -1263,6 +1304,30 @@ QuicSocketBase::SendDataPacket (SequenceNumber32 packetNumber,
     }
 
   uint32_t sz = p->GetSize ();
+
+  // check whether the connection is appLimited, i.e. not enough data to fill a packet
+  if (sz < maxSize and m_txBuffer->AppSize() == 0 and m_tcb->m_bytesInFlight.Get () < m_tcb->m_cWnd)
+    {
+      NS_LOG_LOGIC("Connection is Application-Limited. sz = " << sz << " < maxSize = " << maxSize);
+      m_tcb->m_appLimitedUntil = m_tcb->m_delivered + m_tcb->m_bytesInFlight.Get () ? : 1U;
+    }
+
+  // perform pacing
+  if (m_tcb->m_pacing)
+    {
+      NS_LOG_DEBUG ("Pacing is enabled");
+      if (m_pacingTimer.IsExpired ())
+        {
+          NS_LOG_DEBUG ("Current Pacing Rate " << m_tcb->m_currentPacingRate);
+          NS_LOG_DEBUG ("Pacing Timer is in expired state, activate it. Expires in " << 
+                        m_tcb->m_currentPacingRate.CalculateBytesTxTime (sz));
+          m_pacingTimer.Schedule (m_tcb->m_currentPacingRate.CalculateBytesTxTime (sz));
+        }
+      else
+        {
+          NS_LOG_INFO ("Pacing Timer is already in running state");
+        }
+    }
 
   bool isAckOnly = ((sz == 0) & (withAck));
 
@@ -1319,6 +1384,8 @@ QuicSocketBase::SendDataPacket (SequenceNumber32 packetNumber,
   m_txTrace (p, head, this);
   NotifyDataSent (sz);
 
+  m_txBuffer->UpdatePacketSent(packetNumber, sz);
+
   if (!m_quicCongestionControlLegacy)
     {
       DynamicCast<QuicCongestionOps> (m_congestionControl)->OnPacketSent (
@@ -1328,6 +1395,7 @@ QuicSocketBase::SendDataPacket (SequenceNumber32 packetNumber,
     {
       SetReTxTimeout ();
     }
+
   return sz;
 }
 
@@ -1475,6 +1543,10 @@ QuicSocketBase::ReTxTimeout ()
       SequenceNumber32 next = ++m_tcb->m_nextTxSequence;
       NS_LOG_INFO ("TLP triggered");
       uint32_t s = std::min (ConnectionWindow (), GetSegSize ());
+      
+      // cancel pacing to send packet immediately
+      m_pacingTimer.Cancel ();
+
       SendDataPacket (next, s, m_connected);
       m_tcb->m_tlpCount++;
     }
@@ -1489,10 +1561,18 @@ QuicSocketBase::ReTxTimeout ()
       NS_LOG_INFO ("RTO triggered");
       SequenceNumber32 next = ++m_tcb->m_nextTxSequence;
       uint32_t s = std::min (AvailableWindow (), GetSegSize ());
+      
+      // cancel pacing to send packet immediately
+      m_pacingTimer.Cancel ();
+      
       SendDataPacket (next, s, m_connected);
       next = ++m_tcb->m_nextTxSequence;
 
       s = std::min (AvailableWindow (), GetSegSize ());
+      
+      // cancel pacing, again
+      m_pacingTimer.Cancel ();
+
       SendDataPacket (next, s, m_connected);
 
       m_tcb->m_rtoCount++;
@@ -1542,6 +1622,7 @@ QuicSocketBase::BytesInFlight () const
   uint32_t bytesInFlight = m_txBuffer->BytesInFlight ();
 
   NS_LOG_INFO ("Returning calculated bytesInFlight: " << bytesInFlight);
+  m_tcb->m_bytesInFlight = bytesInFlight;
   return bytesInFlight;
 }
 
@@ -2136,6 +2217,13 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
   NS_LOG_FUNCTION (this);
   NS_LOG_INFO ("Process ACK");
 
+  // Generate RateSample
+  struct RateSample * rs = m_txBuffer->GetRateSample ();
+  rs->m_priorInFlight = m_tcb->m_bytesInFlight.Get ();
+
+  uint32_t lostOut = m_txBuffer->GetLost ();
+  uint32_t delivered = m_tcb->m_delivered;
+
   uint32_t previousWindow = m_txBuffer->BytesInFlight ();
   
   std::vector<uint32_t> additionalAckBlocks = sub.GetAdditionalAckBlocks ();
@@ -2154,6 +2242,10 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
 
   // Count newly acked bytes
   uint32_t ackedBytes = previousWindow - m_txBuffer->BytesInFlight ();
+
+  m_txBuffer->GenerateRateSample ();
+  rs->m_packetLoss = std::abs ((int) lostOut - (int) m_txBuffer->GetLost ());
+  m_tcb->m_lastAckedSackedBytes = m_tcb->m_delivered - delivered;
 
   // RTO packet acknowledged - IETF Draft QUIC Recovery, Sec. 4.3.3
   if (m_tcb->m_rtoCount > 0)
@@ -2220,14 +2312,14 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
         }
       DoRetransmit (lostPackets);
     }
-  else if (ackedBytes > 0)
+  /* else */ if (ackedBytes > 0)
     {
       if (!m_quicCongestionControlLegacy)
         {
           NS_LOG_INFO ("Update the variables in the congestion control (QUIC)");
           // Process the ACK
           DynamicCast<QuicCongestionOps> (m_congestionControl)->OnAckReceived (
-            m_tcb, sub, ackedPackets);
+            m_tcb, sub, ackedPackets, rs);
           m_lastRtt = m_tcb->m_lastRtt;
         }
       else
@@ -2976,6 +3068,14 @@ uint32_t
 QuicSocketBase::GetInitialPacketSize () const
 {
   return m_initialPacketSize;
+}
+
+void
+QuicSocketBase::NotifyPacingPerformed (void)
+{
+  NS_LOG_FUNCTION (this);
+  NS_LOG_INFO ("Pacing timer expired, try sending a packet");
+  SendPendingData (m_connected);
 }
 
 } // namespace ns3

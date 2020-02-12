@@ -96,9 +96,11 @@ QuicCongestionOps::OnPacketSent (Ptr<TcpSocketState> tcb,
 void
 QuicCongestionOps::OnAckReceived (Ptr<TcpSocketState> tcb,
                                       QuicSubheader &ack,
-                                      std::vector<QuicSocketTxItem*> newAcks)
+                                      std::vector<QuicSocketTxItem*> newAcks,
+                                      const struct RateSample *rs)
 {
   NS_LOG_FUNCTION (this);
+  NS_UNUSED(rs);
 
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
   NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");

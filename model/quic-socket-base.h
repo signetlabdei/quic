@@ -114,6 +114,15 @@ public:
   Time m_kDefaultInitialRtt;                    //!< The default RTT used before an RTT sample is taken.
   uint32_t m_kMaxPacketsReceivedBeforeAckSend;  //!< The number of packets to be received before an ACK is triggered
 
+  // RateSample variables of interest
+  uint64_t              m_delivered       {0};              //!< The total amount of data in bytes delivered so far
+  Time                  m_deliveredTime   {Seconds (0)};    //!< Simulation time when m_delivered was last updated
+  Time                  m_firstSentTime   {Seconds (0)};    //!< The send time of the packet that was most recently marked as delivered
+  uint64_t              m_appLimitedUntil {0};              //!< Connection is application-limited until m_appLimitedUntil > m_delivered
+  uint32_t              m_txItemDelivered {0};              /**< amount of data (in bytes) delivered when last packet
+                                                                marked asdelivered was first sent */
+  uint32_t              m_lastAckedSackedBytes {0};         //!< Size of data sacked in the last ack
+  uint32_t              m_ackBytesSent    {0};              //!< amount of ACK-only bytes sent
 };
 
 /**
@@ -675,6 +684,10 @@ protected:
    */
   void ConnectionSucceeded (void);
 
+  /**
+   * \brief Notify Pacing
+   */
+  void NotifyPacingPerformed (void);
   /** 
    * Send the connection close packet and schedule 
    * the DoClose method
@@ -742,6 +755,9 @@ protected:
   uint32_t m_numPacketsReceivedSinceLastAckSent;  //!< Number of packets received since last ACK sent
 
   uint32_t m_initialPacketSize; //!< size of the first packet to be sent durin the handshake (at least 1200 bytes, per RFC)
+
+  // Pacing timer
+  Timer m_pacingTimer       {Timer::REMOVE_ON_DESTROY}; //!< Pacing Event
 
   /**
   * \brief Callback pointer for cWnd trace chaining
