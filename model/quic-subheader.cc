@@ -496,6 +496,7 @@ QuicSubheader::Deserialize (Buffer::Iterator start)
   m_frameType = i.ReadU8 ();
 
   NS_LOG_FUNCTION (this << (uint64_t)m_frameType);
+  NS_LOG_WARN("TYPE "<< (int) m_frameType);
 
   NS_ASSERT (m_frameType >= PADDING and m_frameType <= STREAM111);
 

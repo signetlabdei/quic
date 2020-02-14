@@ -37,6 +37,7 @@
 namespace ns3 {
 
 class QuicSocketState;
+class QuicSocketTxScheduler;
 
 struct RateSample
 {
@@ -248,33 +249,46 @@ public:
   uint32_t Retransmission (SequenceNumber32 packetNumber);
 
   /**
-   * \brief Set the TcpSocketState (tcb)
+   * Set the TcpSocketState (tcb)
+   * \param The TcpSocketState object
    */
   void SetQuicSocketState (Ptr<QuicSocketState> tcb);
 
   /**
-   * \brief Updates per packet variables required for rate sampling on each
-   * packet transmission
+   * Set the socket scheduler
+   * \param The scheduler object
+   */
+  void SetScheduler (Ptr<QuicSocketTxScheduler> sched);
+
+  /**
+   * Updates per packet variables required for rate sampling on each packet transmission
+   * \param The sequence number of the sent packet
+   * \param The size of the sent packet
    */
   void UpdatePacketSent (SequenceNumber32 seq, uint32_t sz);
 
   /**
-   * \brief Updates ACK related variables required by RateSample to discount the delivery rate.
+   * Updates ACK related variables required by RateSample to discount the delivery rate.
+   * \param The sequence number of the sent ACK packet
+   * \param The size of the sent ACK packet
    */
   void UpdateAckSent(SequenceNumber32 seq, uint32_t sz);
 
   /**
-   * \brief Returns ptr to the rate sample
+   * Get the current rate sample
+   * \return A pointer to the current rate sample
    */
   struct RateSample* GetRateSample ();
 
   /**
-   * \brief Updates rate samples rate on arrival of each acknowledgement.
+   * Updates rate samples rate on arrival of each acknowledgement.
+   * \param The QuicSocketTxItem containing the acknowledgment
    */
   void UpdateRateSample (QuicSocketTxItem *pps);
 
   /**
-   * \brief Calculates delivery rate on arrival of each acknowledgement.
+   * Calculates delivery rate on arrival of each acknowledgement.
+   * \return True if the calculation is performed correctly
    */
   bool GenerateRateSample ();
 
@@ -282,7 +296,7 @@ private:
   typedef std::list<QuicSocketTxItem*> QuicTxPacketList;  //!< container for data stored in the buffer
 
   /**
-   * \brief Discard acknowledged data from the sent list
+   * Discard acknowledged data from the sent list
    */
   void CleanSentList ();
 
@@ -301,13 +315,15 @@ private:
   // Available only for streams
   void SplitItems (QuicSocketTxItem &t1, QuicSocketTxItem &t2, uint32_t size) const;
 
-  QuicTxPacketList m_appList;          //!< List of buffered application packets to be transmitted with additional info
-  QuicTxPacketList m_sentList;         //!< List of sent packets with additional info
-  uint32_t m_maxBuffer;                //!< Max number of data bytes in buffer (SND.WND)
-  uint32_t m_appSize;                  //!< Size of all data in the application list
-  uint32_t m_sentSize;                 //!< Size of all data in the sent list
-  uint32_t m_numFrameStream0InBuffer;  //!< Number of Stream 0 frames buffered
 
+  QuicTxPacketList m_sentList;         		//!< List of sent packets with additional info
+  QuicTxPacketList m_streamZeroList;   		//!< List of waiting stream 0 packets with additional info
+  uint32_t m_maxBuffer;                		//!< Max number of data bytes in buffer (SND.WND)
+  uint32_t m_streamZeroSize;           		//!< Size of all stream 0 data in the application list
+  uint32_t m_sentSize;                 		//!< Size of all data in the sent list
+  uint32_t m_numFrameStream0InBuffer;  		//!< Number of Stream 0 frames buffered
+
+  Ptr<QuicSocketTxScheduler> m_scheduler {nullptr};   //!< Scheduler
   Ptr<QuicSocketState> m_tcb {nullptr};
   struct RateSample   m_rs;
 };

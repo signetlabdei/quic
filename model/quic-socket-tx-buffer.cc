@@ -34,6 +34,7 @@
 #include "ns3/abort.h"
 #include "quic-subheader.h"
 #include "quic-socket-base.h"
+#include "quic-socket-tx-scheduler.h"
 
 namespace ns3 {
 
@@ -111,13 +112,13 @@ QuicSocketTxBuffer::GetTypeId (void)
 
 QuicSocketTxBuffer::QuicSocketTxBuffer ()
   : m_maxBuffer (32768),
-    m_appSize (0),
-    m_sentSize (0),
+	m_streamZeroSize (0),
+	m_sentSize (0),
     m_numFrameStream0InBuffer (
       0)
 {
-  m_appList = QuicTxPacketList ();
-  m_sentList = QuicTxPacketList ();
+	  m_streamZeroList = QuicTxPacketList ();
+	  m_sentList = QuicTxPacketList ();
 }
 
 QuicSocketTxBuffer::~QuicSocketTxBuffer (void)
@@ -130,11 +131,10 @@ QuicSocketTxBuffer::~QuicSocketTxBuffer (void)
       m_sentSize -= item->m_packet->GetSize ();
       delete item;
     }
-
-  for (it = m_appList.begin (); it != m_appList.end (); ++it)
+  for (it = m_streamZeroList.begin (); it != m_streamZeroList.end (); ++it)
     {
       QuicSocketTxItem *item = *it;
-      m_appSize -= item->m_packet->GetSize ();
+      m_streamZeroSize -= item->m_packet->GetSize ();
       delete item;
     }
 }
@@ -152,15 +152,17 @@ QuicSocketTxBuffer::Print (std::ostream & os) const
       (*it)->Print (ss);
     }
 
-  for (it = m_appList.begin (); it != m_appList.end (); ++it)
+  for (it = m_streamZeroList.begin (); it != m_streamZeroList.end (); ++it)
     {
       (*it)->Print (as);
     }
 
-  os << Simulator::Now ().GetSeconds () << "\nApp list: \n" << as.str () << "\n\nSent list: \n" << ss.str ()
+  m_scheduler->Print(os);
+
+  os << Simulator::Now ().GetSeconds () << "\nStream 0 list: \n" << as.str () << "\n\nSent list: \n" << ss.str ()
      << "\n\nCurrent Status: " << "\nNumber of transmissions = "
-     << m_sentList.size () << "\nApplication Size = " << m_appSize
-     << "\nSent Size = " << m_sentSize;
+     << m_sentList.size () << "\nSent Size = " << m_sentSize << "\nNumber of stream 0 packets waiting = "
+	 << m_streamZeroList.size () << "\nStream 0 waiting packet size = " << m_streamZeroSize;
 }
 
 bool
@@ -193,10 +195,17 @@ QuicSocketTxBuffer::Add (Ptr<Packet> p)
           item->m_isStream = isStream;
           item->m_isStream0 = (streamId == 0);
           m_numFrameStream0InBuffer += (streamId == 0);
-          m_appList.insert (m_appList.end (), item);
-          m_appSize += p->GetSize ();
+          if (streamId == 0)
+          {
+        	m_streamZeroList.insert(m_streamZeroList.end(), item);
+        	m_streamZeroSize += item->m_packet->GetSize();
+          }
+          else
+          {
+            m_scheduler->Add(item, false);
+          }
 
-          NS_LOG_INFO ("Update: Application Size = " << m_appSize << ", offset " << qsb.GetOffset ());
+          NS_LOG_INFO ("Update: Application Size = " << m_scheduler->AppSize() << ", offset " << qsb.GetOffset ());
           return true;
         }
       else
@@ -216,25 +225,21 @@ QuicSocketTxBuffer::NextStream0Sequence (const SequenceNumber32 seq)
 
   QuicSocketTxItem* outItem = new QuicSocketTxItem ();
 
-  QuicTxPacketList::iterator it = m_appList.begin ();
-  while (it != m_appList.end ())
+  QuicTxPacketList::iterator it = m_streamZeroList.begin ();
+  while (it != m_streamZeroList.end ())
     {
       Ptr<Packet> currentPacket = (*it)->m_packet;
-
-      if ((*it)->m_isStream0)
-        {
-          outItem->m_packetNumber = seq;
-          outItem->m_lastSent = Now ();
-          outItem->m_packet = currentPacket;
-          outItem->m_isStream0 = (*it)->m_isStream0;
-          m_appList.erase (it);
-          m_appSize -= currentPacket->GetSize ();
-          m_sentList.insert (m_sentList.end (), outItem);
-          m_sentSize += outItem->m_packet->GetSize ();
-          --m_numFrameStream0InBuffer;
-          Ptr<Packet> toRet = outItem->m_packet->Copy ();
-          return toRet;
-        }
+	  outItem->m_packetNumber = seq;
+	  outItem->m_lastSent = Now ();
+	  outItem->m_packet = currentPacket;
+	  outItem->m_isStream0 = (*it)->m_isStream0;
+	  m_streamZeroList.erase (it);
+	  m_streamZeroSize -= currentPacket->GetSize ();
+	  m_sentList.insert (m_sentList.end (), outItem);
+	  m_sentSize += outItem->m_packet->GetSize ();
+	  --m_numFrameStream0InBuffer;
+	  Ptr<Packet> toRet = outItem->m_packet->Copy ();
+	  return toRet;
       it++;
     }
   return 0;
@@ -269,148 +274,16 @@ QuicSocketTxBuffer::GetNewSegment (uint32_t numBytes)
 {
   NS_LOG_FUNCTION (this << numBytes);
 
-  bool toInsert = false;
-  bool firstSegment = true;
-  Ptr<Packet> currentPacket = 0;
-  QuicSocketTxItem *currentItem = 0;
-  QuicSocketTxItem *outItem = new QuicSocketTxItem ();
-  outItem->m_isStream = true;   // Packets sent with this method are always stream packets
-  outItem->m_isStream0 = false;
-  outItem->m_packet = Create<Packet> ();
-  uint32_t outItemSize = 0;
-  QuicTxPacketList::iterator it = m_appList.begin ();
+  QuicSocketTxItem *outItem = m_scheduler->GetNewSegment(numBytes);
 
-  while (it != m_appList.end () && outItemSize < numBytes)
-    {
-      currentItem = *it;
-      currentPacket = currentItem->m_packet;
-
-      if (outItemSize + currentItem->m_packet->GetSize ()   /*- subheaderSize*/
-          <= numBytes)       // Merge
-        {
-          NS_LOG_LOGIC ("Add complete frame to the outItem - size "
-                        << currentItem->m_packet->GetSize ()
-                        << " m_appSize " << m_appSize);
-          QuicSubheader qsb;
-          currentPacket->PeekHeader (qsb);
-          toInsert = true;
-          MergeItems (*outItem, *currentItem);
-          outItemSize += currentItem->m_packet->GetSize ();
-
-          m_appList.erase (it);
-          m_appSize -= currentItem->m_packet->GetSize ();
-
-          delete currentItem;
-
-          it = m_appList.begin ();   // restart to identify if there are other packets that can be merged
-          NS_LOG_LOGIC ("Updating application buffer size: " << m_appSize);
-          continue;
-        }
-      else if (firstSegment)  // we cannot transmit a full packet, so let's split it and update the subheaders
-        {
-          firstSegment = false;
-
-          // subtract the whole packet from m_appSize, then add the remaining fragment (need to account for headers)
-          uint32_t removed = currentItem->m_packet->GetSize ();
-          m_appSize -= removed;
-
-          // get the currentPacket subheader
-          QuicSubheader qsb;
-          currentPacket->PeekHeader (qsb);
-
-          // new packet size
-          int newPacketSizeInt = (int)numBytes - outItemSize - qsb.GetSerializedSize ();
-          if (newPacketSizeInt <= 0)
-            {
-              NS_LOG_LOGIC ("Not enough bytes even for the header");
-              m_appSize += removed;
-              break;
-            }
-          currentPacket->RemoveHeader (qsb);
-          uint32_t newPacketSize = (uint32_t)newPacketSizeInt;
-
-          NS_LOG_LOGIC ("Add incomplete frame to the outItem");
-          toInsert = true;
-          uint32_t totPacketSize = currentItem->m_packet->GetSize ();
-          NS_LOG_LOGIC ("Extracted " << outItemSize << " bytes");
-
-          uint32_t oldOffset = qsb.GetOffset ();
-          uint32_t newOffset = oldOffset + newPacketSize;
-          bool oldOffBit = !(oldOffset == 0);
-          bool newOffBit = true;
-          uint32_t oldLength = qsb.GetLength ();
-          uint32_t newLength = 0;
-          bool newLengthBit = true;
-          newLength = totPacketSize - newPacketSize;
-          if (oldLength == 0)
-            {
-              newLengthBit = false;
-            }
-          bool lengthBit = true;
-          bool oldFinBit = qsb.IsStreamFin ();
-          bool newFinBit = false;
-
-          QuicSubheader newQsbToTx = QuicSubheader::CreateStreamSubHeader (qsb.GetStreamId (),
-                                                                           oldOffset, newPacketSize, oldOffBit, lengthBit, newFinBit);
-          QuicSubheader newQsbToBuffer = QuicSubheader::CreateStreamSubHeader (qsb.GetStreamId (),
-                                                                               newOffset, newLength, newOffBit, newLengthBit, oldFinBit);
-          newQsbToTx.SetMaxStreamData (qsb.GetMaxStreamData ());
-          newQsbToBuffer.SetMaxStreamData (qsb.GetMaxStreamData ());
-
-          Ptr<Packet> firstPartPacket = currentItem->m_packet->CreateFragment (
-              0, newPacketSize);
-          NS_ASSERT_MSG (firstPartPacket->GetSize () == newPacketSize,
-                         "Wrong size " << firstPartPacket->GetSize ());
-          firstPartPacket->AddHeader (newQsbToTx);
-          firstPartPacket->Print (std::cerr);
-
-          NS_LOG_LOGIC ("Split packet, putting second part back in application buffer");
-
-          Ptr<Packet> secondPartPacket = currentItem->m_packet->CreateFragment (
-              newPacketSize, newLength);
-          secondPartPacket->AddHeader (newQsbToBuffer);
-
-          QuicSocketTxItem *toBeBuffered = new QuicSocketTxItem (*currentItem);
-          toBeBuffered->m_packet = secondPartPacket;
-          currentItem->m_packet = firstPartPacket;
-
-          MergeItems (*outItem, *currentItem);
-          outItemSize += currentItem->m_packet->GetSize ();
-
-          m_appList.erase (it);
-          m_appList.push_front (toBeBuffered);
-          m_appSize += toBeBuffered->m_packet->GetSize ();
-          // check correctness of application size
-          uint32_t check = m_appSize;
-          for (auto itc = m_appList.begin ();
-               itc != m_appList.end () and !m_appList.empty (); ++itc)
-            {
-              check -= (*itc)->m_packet->GetSize ();
-            }
-          if (check != 0)
-            {
-              outItemSize += 0;
-            }
-
-          delete currentItem;
-
-          NS_LOG_LOGIC ("Buffer size: " << m_appSize << " (put back " << toBeBuffered->m_packet->GetSize () << " bytes)");
-
-          it = m_appList.begin ();   // restart to identify if there are other packets that can be merged
-          break; // at most one segment
-        }
-
-      it++;
-    }
-
-  if (toInsert)
+  if (outItem->m_packet->GetSize() > 0)
     {
       NS_LOG_LOGIC ("Adding packet to sent buffer");
       m_sentList.insert (m_sentList.end (), outItem);
       m_sentSize += outItem->m_packet->GetSize ();
     }
 
-  NS_LOG_INFO ("Update: Sent Size = " << m_sentSize << " remaining App Size " << m_appSize << " object size " << outItemSize);
+  NS_LOG_INFO ("Update: Sent Size = " << m_sentSize << " remaining App Size " << m_scheduler->AppSize() << " object size " << outItem->m_packet->GetSize());
 
   //Print(std::cout);
 
@@ -589,18 +462,27 @@ QuicSocketTxBuffer::Retransmission (SequenceNumber32 packetNumber)
         {
           // Add lost packet contents to app buffer
           QuicSocketTxItem *retx = new QuicSocketTxItem ();
-          retx->m_packetNumber = packetNumber;
+          retx->m_packetNumber = packetNumber++;
           retx->m_isStream = item->m_isStream;
           retx->m_isStream0 = item->m_isStream0;
           retx->m_packet = Create<Packet> ();
-          NS_LOG_LOGIC ("Add packet " << retx->m_packetNumber.GetValue () << " to retx packet");
+          NS_LOG_INFO ("Retx packet " << item->m_packetNumber << " as "<< retx->m_packetNumber.GetValue ());
           MergeItems (*retx, *item);
           retx->m_lost = false;
           retx->m_retrans = true;
-          m_appList.insert (m_appList.begin (), retx);
-          m_appSize += retx->m_packet->GetSize ();
           toRetx += retx->m_packet->GetSize ();
-          NS_LOG_INFO ("Retransmit packet " << (*sent_it)->m_packetNumber);
+          m_sentSize -= retx->m_packet->GetSize ();
+          if (retx->m_isStream0)
+          {
+        	  NS_LOG_INFO("Lost stream 0 packet, re-inserting in list");
+        	  m_streamZeroList.insert (m_streamZeroList.begin (), retx);
+        	  m_streamZeroSize += retx->m_packet->GetSize ();
+        	  m_numFrameStream0InBuffer++;
+          }
+          else
+          {
+        	m_scheduler->Add(retx, true);
+          }
         }
     }
 
@@ -613,7 +495,6 @@ QuicSocketTxBuffer::Retransmission (SequenceNumber32 packetNumber)
       if (item->m_lost)
         {
           // Remove lost packet from sent vector
-          m_sentSize -= item->m_packet->GetSize ();
           sent_it = m_sentList.erase (sent_it);
         }
       else
@@ -722,7 +603,7 @@ QuicSocketTxBuffer::MergeItems (QuicSocketTxItem &t1,
 uint32_t
 QuicSocketTxBuffer::Available (void) const
 {
-  return m_maxBuffer - m_appSize;
+  return m_maxBuffer - m_streamZeroSize - m_scheduler->AppSize();
 }
 
 uint32_t
@@ -740,7 +621,7 @@ QuicSocketTxBuffer::SetMaxBufferSize (uint32_t n)
 uint32_t
 QuicSocketTxBuffer::AppSize (void) const
 {
-  return m_appSize;
+  return m_streamZeroSize + m_scheduler->AppSize();
 }
 
 uint32_t
@@ -768,7 +649,7 @@ QuicSocketTxBuffer::BytesInFlight () const
 
   NS_LOG_INFO ("Compute bytes in flight " << inFlight
                                           << " m_sentSize " << m_sentSize
-                                          << " m_appSize " << m_appSize);
+                                          << " m_appSize " << m_streamZeroSize + m_scheduler->AppSize());
   return inFlight;
 
 }
@@ -778,6 +659,13 @@ QuicSocketTxBuffer::SetQuicSocketState (Ptr<QuicSocketState> tcb)
 {
   NS_LOG_FUNCTION (this);
   m_tcb = tcb;
+}
+
+void
+QuicSocketTxBuffer::SetScheduler (Ptr<QuicSocketTxScheduler> sched)
+{
+  NS_LOG_FUNCTION (this);
+  m_scheduler = sched;
 }
 
 void

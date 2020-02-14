@@ -680,6 +680,8 @@ QuicL4Protocol::CreateSocket (TypeId congestionTypeId)
   socket->SetNode (m_node);
   socket->SetQuicL4 (this);
 
+  socket->InitializeScheduling();
+
   // generate a random connection ID and check that has not been assigned to other
   // sockets associated to this L4 protocol
   Ptr<UniformRandomVariable> rand = CreateObject<UniformRandomVariable> ();

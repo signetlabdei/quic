@@ -61,6 +61,7 @@
 #include "ns3/tcp-option-sack-permitted.h"
 #include "ns3/tcp-option-sack.h"
 #include "ns3/rtt-estimator.h"
+#include "quic-socket-tx-pfifo-scheduler.h"
 #include <math.h>
 #include <algorithm>
 #include <vector>
@@ -221,6 +222,11 @@ QuicSocketBase::GetTypeId (void)
                                          &QuicSocketBase::SetInitialPacketSize),
                    MakeUintegerChecker<uint32_t> (
                     QuicSocketBase::MIN_INITIAL_PACKET_SIZE, UINT32_MAX))
+	.AddAttribute ("SchedulingPolicy",
+				   "Scheduling policy among streams",
+				   TypeIdValue (QuicSocketTxPFifoScheduler::GetTypeId ()),
+				   MakeTypeIdAccessor (&QuicSocketBase::m_schedulingTypeId),
+				   MakeTypeIdChecker ())
 //    .AddAttribute (
 //                   "LegacyCongestionControl",
 //                   "When true, use TCP implementations for the congestion control",
@@ -486,6 +492,7 @@ QuicSocketBase::QuicSocketBase (void)
     m_pacingTimer (Timer::REMOVE_ON_DESTROY)
 {
   NS_LOG_FUNCTION (this);
+
 
   m_rxBuffer = CreateObject<QuicSocketRxBuffer> ();
   m_txBuffer = CreateObject<QuicSocketTxBuffer> ();
@@ -1476,6 +1483,7 @@ QuicSocketBase::DoRetransmit (std::vector<QuicSocketTxItem*> lostPackets)
   // Get packets to retransmit
   SequenceNumber32 next = ++m_tcb->m_nextTxSequence;
   uint32_t toRetx = m_txBuffer->Retransmission (next);
+  NS_LOG_INFO(toRetx << " bytes to retransmit");
   NS_LOG_DEBUG ("Send the retransmitted frame");
   uint32_t win = AvailableWindow ();
   uint32_t connWin = ConnectionWindow ();
@@ -1905,6 +1913,15 @@ QuicSocketBase::SetConnectionId (uint64_t connectionId)
   NS_LOG_FUNCTION_NOARGS ();
 
   m_connectionId = connectionId;
+}
+
+void
+QuicSocketBase::InitializeScheduling()
+{
+  ObjectFactory schedulerFactory;
+  schedulerFactory.SetTypeId (m_schedulingTypeId);
+  Ptr<QuicSocketTxScheduler> sched = schedulerFactory.Create<QuicSocketTxScheduler> ();
+  m_txBuffer->SetScheduler(sched);
 }
 
 uint64_t

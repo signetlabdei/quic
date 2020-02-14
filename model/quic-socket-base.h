@@ -35,6 +35,7 @@
 #include "ns3/event-id.h"
 #include "quic-socket-rx-buffer.h"
 #include "quic-socket-tx-buffer.h"
+#include "quic-socket-tx-scheduler.h"
 #include "quic-header.h"
 #include "quic-subheader.h"
 #include "quic-transport-parameters.h"
@@ -276,6 +277,11 @@ public:
    * \param quic the L4 Protocol to be set
    */
   void SetQuicL4 (Ptr<QuicL4Protocol> quic);
+
+  /**
+   * \brief Initialize socket TX buffer scheduler
+   */
+  void InitializeScheduling ();
 
   /**
    * \brief Set the connection ID, e.g., for client-initiated connections
@@ -707,6 +713,7 @@ protected:
   uint32_t m_socketTxBufferSize;                          //!< Size of the socket TX buffer
   uint32_t m_socketRxBufferSize;                          //!< Size of the socket RX buffer
   std::vector<SequenceNumber32> m_receivedPacketNumbers;  //!< Received packet number vector
+  TypeId m_schedulingTypeId;  							  //!< The socket type of the packet scheduler
 
   // State-related attributes
   TracedValue<QuicStates_t> m_socketState;  //!< State in the Congestion state machine
