@@ -96,7 +96,7 @@ QuicCongestionOps::OnPacketSent (Ptr<TcpSocketState> tcb,
 void
 QuicCongestionOps::OnAckReceived (Ptr<TcpSocketState> tcb,
                                       QuicSubheader &ack,
-                                      std::vector<QuicSocketTxItem*> newAcks,
+                                      std::vector<Ptr<QuicSocketTxItem>> newAcks,
                                       const struct RateSample *rs)
 {
   NS_LOG_FUNCTION (this);
@@ -109,7 +109,7 @@ QuicCongestionOps::OnAckReceived (Ptr<TcpSocketState> tcb,
       ack.GetLargestAcknowledged ());
   
   // newAcks are ordered from the highest packet number to the smalles
-  QuicSocketTxItem* lastAcked = newAcks.at (0);
+  Ptr<QuicSocketTxItem> lastAcked = newAcks.at (0);
 
   NS_LOG_LOGIC ("Updating RTT estimate");
   // If the largest acked is newly acked, update the RTT.
@@ -236,7 +236,7 @@ QuicCongestionOps::OnPacketAckedCC (Ptr<TcpSocketState> tcb,
 
 void
 QuicCongestionOps::OnPacketsLost (
-  Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem*> lostPackets)
+  Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxItem>> lostPackets)
 {
   NS_LOG_LOGIC (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));

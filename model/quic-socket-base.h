@@ -593,7 +593,7 @@ protected:
   /**
    * \brief Handle retransmission after loss
    */
-  void DoRetransmit (std::vector<QuicSocketTxItem*> lostPackets);
+  void DoRetransmit (std::vector<Ptr<QuicSocketTxItem>> lostPackets);
 
   /**
    * \brief Extract at most maxSize bytes from the TxBuffer at sequence packetNumber, add the

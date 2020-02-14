@@ -65,13 +65,8 @@ QuicSocketTxPFifoScheduler::QuicSocketTxPFifoScheduler(
 }
 
 QuicSocketTxPFifoScheduler::~QuicSocketTxPFifoScheduler(void) {
-
-	while (m_appList.size() > 0) {
-		PriorityTxItem pItem = m_appList.top();
-		m_appSize -= pItem.item->m_packet->GetSize();
-		delete pItem.item;
-		m_appList.pop();
-	}
+	m_appList = QuicTxPacketList();
+	m_appSize = 0;
 }
 
 void QuicSocketTxPFifoScheduler::Print(std::ostream &os) const {
@@ -89,7 +84,7 @@ void QuicSocketTxPFifoScheduler::Print(std::ostream &os) const {
 			<< "\n\nCurrent Status: \nApplication Size = " << m_appSize;
 }
 
-void QuicSocketTxPFifoScheduler::Add(QuicSocketTxItem *item, bool retx) {
+void QuicSocketTxPFifoScheduler::Add(Ptr<QuicSocketTxItem> item, bool retx) {
 	NS_LOG_FUNCTION(this << item);
 
 	if (retx) {
@@ -124,16 +119,16 @@ void QuicSocketTxPFifoScheduler::Add(QuicSocketTxItem *item, bool retx) {
 					item->m_packet->RemoveAtStart(sub.GetLength());
 					nextFragment->AddHeader(sub);
 					start += nextFragment->GetSize();
-					QuicSocketTxItem it = QuicSocketTxItem(*item);
+					Ptr<QuicSocketTxItem> it = CreateObject<QuicSocketTxItem>(*item);
 					uint64_t streamId = sub.GetStreamId();
 					uint64_t offset = sub.GetOffset();
-					it.m_packet = nextFragment;
+					it->m_packet = nextFragment;
 					NS_LOG_INFO(
-							"Added retx fragment on stream " << streamId << " with offset " << offset << " and length " << it.m_packet->GetSize() << ", pointer " << GetPointer(it.m_packet));
+							"Added retx fragment on stream " << streamId << " with offset " << offset << " and length " << it->m_packet->GetSize() << ", pointer " << GetPointer(it->m_packet));
 					PriorityTxItem pItem = PriorityTxItem(streamId, offset,
-							&it);
+							it);
 					m_appList.push(pItem);
-					m_appSize += it.m_packet->GetSize();
+					m_appSize += it->m_packet->GetSize();
 				}
 			} else {
 				NS_LOG_INFO(
@@ -157,14 +152,14 @@ void QuicSocketTxPFifoScheduler::Add(QuicSocketTxItem *item, bool retx) {
 	NS_LOG_INFO(m_appList.top().item);
 }
 
-QuicSocketTxItem*
+Ptr<QuicSocketTxItem>
 QuicSocketTxPFifoScheduler::GetNewSegment(uint32_t numBytes) {
 	NS_LOG_FUNCTION(this << numBytes);
 
 	bool firstSegment = true;
 	Ptr<Packet> currentPacket = 0;
-	QuicSocketTxItem *currentItem = 0;
-	QuicSocketTxItem *outItem = new QuicSocketTxItem();
+	Ptr<QuicSocketTxItem> currentItem = 0;
+	Ptr<QuicSocketTxItem> outItem = CreateObject<QuicSocketTxItem>();
 	outItem->m_isStream = true; // Packets sent with this method are always stream packets
 	outItem->m_isStream0 = false;
 	outItem->m_packet = Create<Packet>();
@@ -193,8 +188,6 @@ QuicSocketTxPFifoScheduler::GetNewSegment(uint32_t numBytes) {
 
 			m_appList.pop();
 			m_appSize -= currentItem->m_packet->GetSize();
-
-			delete currentItem;
 
 			NS_LOG_LOGIC("Updating application buffer size: " << m_appSize);
 			continue;
@@ -289,7 +282,6 @@ QuicSocketTxPFifoScheduler::GetNewSegment(uint32_t numBytes) {
 				temp.pop();
 			}
 			NS_ASSERT(check == 0);
-			delete currentItem;
 
 			NS_LOG_LOGIC(
 					"Buffer size: " << m_appSize << " (put back " << toBeBuffered->m_packet->GetSize () << " bytes)");

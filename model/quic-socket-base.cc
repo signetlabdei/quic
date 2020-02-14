@@ -1477,7 +1477,7 @@ QuicSocketBase::SetReTxTimeout ()
 }
 
 void
-QuicSocketBase::DoRetransmit (std::vector<QuicSocketTxItem*> lostPackets)
+QuicSocketBase::DoRetransmit (std::vector<Ptr<QuicSocketTxItem>> lostPackets)
 {
   NS_LOG_FUNCTION (this);
   // Get packets to retransmit
@@ -1520,7 +1520,7 @@ QuicSocketBase::ReTxTimeout ()
     }
   else if (m_tcb->m_alarmType == 1 && m_tcb->m_lossTime != 0)
     {
-      std::vector<QuicSocketTxItem*> lostPackets = m_txBuffer->DetectLostPackets ();
+      std::vector<Ptr<QuicSocketTxItem>> lostPackets = m_txBuffer->DetectLostPackets ();
       NS_LOG_INFO ("RTO triggered: early retransmit");
       // Early retransmit or Time Loss Detection.
       if (m_quicCongestionControlLegacy)
@@ -2254,7 +2254,7 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
     and ackBlockCount != gaps.size (),
     "Received Corrupted Ack Frame.");
 
-  std::vector<QuicSocketTxItem*> ackedPackets = m_txBuffer->OnAckUpdate (
+  std::vector<Ptr<QuicSocketTxItem>> ackedPackets = m_txBuffer->OnAckUpdate (
       m_tcb, largestAcknowledged, additionalAckBlocks, gaps);
 
   // Count newly acked bytes
@@ -2275,7 +2275,7 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
                                  - m_tcb->m_largestSentBeforeRto.GetValue ()) / GetSegSize ();
           uint32_t inFlightBeforeRto = m_txBuffer->BytesInFlight ();
           m_txBuffer->ResetSentList (newPackets);
-          std::vector<QuicSocketTxItem*> lostPackets =
+          std::vector<Ptr<QuicSocketTxItem>> lostPackets =
             m_txBuffer->DetectLostPackets ();
           if (m_quicCongestionControlLegacy && !lostPackets.empty ())
             {
@@ -2302,7 +2302,7 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
     }
 
   // Find lost packets
-  std::vector<QuicSocketTxItem*> lostPackets =
+  std::vector<Ptr<QuicSocketTxItem>> lostPackets =
     m_txBuffer->DetectLostPackets ();
   // Recover from losses
   if (!lostPackets.empty ())
@@ -2346,7 +2346,7 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
           NS_LOG_INFO ("Update the variables in the congestion control (legacy), ackedBytes "
                        << ackedBytes << " ackedSegments " << ackedSegments);
           // new acks are ordered from the highest packet number to the smalles
-          QuicSocketTxItem* lastAcked = ackedPackets.at (0);
+          Ptr<QuicSocketTxItem> lastAcked = ackedPackets.at (0);
 
           NS_LOG_LOGIC ("Updating RTT estimate");
           // If the largest acked is newly acked, update the RTT.

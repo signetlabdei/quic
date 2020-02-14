@@ -57,8 +57,8 @@ public:
 	 */
 	void Print(std::ostream &os) const;
 
-	void Add(QuicSocketTxItem *item, bool retx);
-	QuicSocketTxItem* GetNewSegment(uint32_t numBytes);
+	void Add(Ptr<QuicSocketTxItem> item, bool retx);
+	Ptr<QuicSocketTxItem> GetNewSegment(uint32_t numBytes);
 	uint32_t AppSize(void) const;
 
 private:
@@ -66,8 +66,8 @@ private:
 	{
 		uint64_t streamId;
 		uint64_t offset;
-		QuicSocketTxItem* item;
-		PriorityTxItem(uint64_t id, uint64_t off, QuicSocketTxItem* it) :
+		Ptr<QuicSocketTxItem> item;
+		PriorityTxItem(uint64_t id, uint64_t off, Ptr<QuicSocketTxItem> it) :
 			streamId(id),
 			offset(off),
 			item(it)

@@ -93,12 +93,8 @@ QuicSocketTxFifoScheduler::~QuicSocketTxFifoScheduler (void)
 {
   QuicTxPacketList::iterator it;
 
-  for (it = m_appList.begin (); it != m_appList.end (); ++it)
-    {
-      QuicSocketTxItem *item = *it;
-      m_appSize -= item->m_packet->GetSize ();
-      delete item;
-    }
+  m_appList = QuicTxPacketList();
+  m_appSize = 0;
 }
 
 void
@@ -119,7 +115,7 @@ QuicSocketTxFifoScheduler::Print (std::ostream & os) const
 }
 
 void
-QuicSocketTxFifoScheduler::Add (QuicSocketTxItem* item, bool retx)
+QuicSocketTxFifoScheduler::Add (Ptr<QuicSocketTxItem> item, bool retx)
 {
   NS_LOG_FUNCTION (this << item);
 
@@ -139,15 +135,15 @@ QuicSocketTxFifoScheduler::Add (QuicSocketTxItem* item, bool retx)
   m_appSize += item->m_packet->GetSize ();
 }
 
-QuicSocketTxItem*
+Ptr<QuicSocketTxItem>
 QuicSocketTxFifoScheduler::GetNewSegment (uint32_t numBytes)
 {
   NS_LOG_FUNCTION (this << numBytes);
 
   bool firstSegment = true;
   Ptr<Packet> currentPacket = 0;
-  QuicSocketTxItem *currentItem = 0;
-  QuicSocketTxItem *outItem = new QuicSocketTxItem ();
+  Ptr<QuicSocketTxItem> currentItem = 0;
+  Ptr<QuicSocketTxItem> outItem = new QuicSocketTxItem ();
   outItem->m_isStream = true;   // Packets sent with this method are always stream packets
   outItem->m_isStream0 = false;
   outItem->m_packet = Create<Packet> ();
@@ -173,8 +169,6 @@ QuicSocketTxFifoScheduler::GetNewSegment (uint32_t numBytes)
 
           m_appList.erase (it);
           m_appSize -= currentItem->m_packet->GetSize ();
-
-          delete currentItem;
 
           it = m_appList.begin ();   // restart to identify if there are other packets that can be merged
           NS_LOG_LOGIC ("Updating application buffer size: " << m_appSize);
@@ -264,8 +258,6 @@ QuicSocketTxFifoScheduler::GetNewSegment (uint32_t numBytes)
               check -= (*itc)->m_packet->GetSize ();
             }
           NS_ASSERT(check == 0);
-
-          delete currentItem;
 
           NS_LOG_LOGIC ("Buffer size: " << m_appSize << " (put back " << toBeBuffered->m_packet->GetSize () << " bytes)");
           break; // at most one segment

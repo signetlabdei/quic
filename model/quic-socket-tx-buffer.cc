@@ -40,6 +40,20 @@ namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("QuicSocketTxBuffer");
 
+TypeId
+QuicSocketTxItem::GetTypeId (void)
+{
+  static TypeId tid =
+    TypeId ("ns3::QuicSocketTxItem").SetParent<Object> ().SetGroupName (
+      "Internet").AddConstructor<QuicSocketTxItem> ()
+//    .AddTraceSource ("UnackSequence",
+//                     "First unacknowledged sequence number (SND.UNA)",
+//                     MakeTraceSourceAccessor (&QuicSocketTxBuffer::m_sentSize),
+//                     "ns3::SequenceNumber32TracedValueCallback")
+  ;
+  return tid;
+}
+
 QuicSocketTxItem::QuicSocketTxItem ()
   : m_packet (0),
     m_packetNumber (0),
@@ -125,18 +139,10 @@ QuicSocketTxBuffer::~QuicSocketTxBuffer (void)
 {
   QuicTxPacketList::iterator it;
 
-  for (it = m_sentList.begin (); it != m_sentList.end (); ++it)
-    {
-      QuicSocketTxItem *item = *it;
-      m_sentSize -= item->m_packet->GetSize ();
-      delete item;
-    }
-  for (it = m_streamZeroList.begin (); it != m_streamZeroList.end (); ++it)
-    {
-      QuicSocketTxItem *item = *it;
-      m_streamZeroSize -= item->m_packet->GetSize ();
-      delete item;
-    }
+  m_sentList = QuicTxPacketList();
+  m_streamZeroList = QuicTxPacketList();
+  m_sentSize = 0;
+  m_streamZeroSize = 0;
 }
 
 void
@@ -251,7 +257,7 @@ QuicSocketTxBuffer::NextSequence (uint32_t numBytes,
 {
   NS_LOG_FUNCTION (this << numBytes << seq);
 
-  QuicSocketTxItem* outItem = GetNewSegment (numBytes);
+  Ptr<QuicSocketTxItem> outItem = GetNewSegment (numBytes);
 
   if (outItem != nullptr)
     {
@@ -269,12 +275,12 @@ QuicSocketTxBuffer::NextSequence (uint32_t numBytes,
 
 }
 
-QuicSocketTxItem*
+Ptr<QuicSocketTxItem>
 QuicSocketTxBuffer::GetNewSegment (uint32_t numBytes)
 {
   NS_LOG_FUNCTION (this << numBytes);
 
-  QuicSocketTxItem *outItem = m_scheduler->GetNewSegment(numBytes);
+  Ptr<QuicSocketTxItem> outItem = m_scheduler->GetNewSegment(numBytes);
 
   if (outItem->m_packet->GetSize() > 0)
     {
@@ -290,7 +296,7 @@ QuicSocketTxBuffer::GetNewSegment (uint32_t numBytes)
   return outItem;
 }
 
-std::vector<QuicSocketTxItem*>
+std::vector<Ptr<QuicSocketTxItem>>
 QuicSocketTxBuffer::OnAckUpdate (
   Ptr<TcpSocketState> tcb, const uint32_t largestAcknowledged,
   const std::vector<uint32_t> &additionalAckBlocks,
@@ -300,7 +306,7 @@ QuicSocketTxBuffer::OnAckUpdate (
   std::vector<uint32_t> compAckBlocks = additionalAckBlocks;
   std::vector<uint32_t> compGaps = gaps;
 
-  std::vector<QuicSocketTxItem*> newlyAcked;
+  std::vector<Ptr<QuicSocketTxItem>> newlyAcked;
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
 
   compAckBlocks.insert (compAckBlocks.begin (), largestAcknowledged);
@@ -457,7 +463,7 @@ QuicSocketTxBuffer::Retransmission (SequenceNumber32 packetNumber)
   for (auto sent_it = m_sentList.rbegin (); sent_it != m_sentList.rend ();
        ++sent_it)
     {
-      QuicSocketTxItem *item = *sent_it;
+	  Ptr<QuicSocketTxItem> item = *sent_it;
       if (item->m_lost)
         {
           // Add lost packet contents to app buffer
@@ -491,7 +497,7 @@ QuicSocketTxBuffer::Retransmission (SequenceNumber32 packetNumber)
   // Remove lost packets from the sent list
   while (!m_sentList.empty () && sent_it != m_sentList.end ())
     {
-      QuicSocketTxItem *item = *sent_it;
+	  Ptr<QuicSocketTxItem> item = *sent_it;
       if (item->m_lost)
         {
           // Remove lost packet from sent vector
@@ -505,11 +511,11 @@ QuicSocketTxBuffer::Retransmission (SequenceNumber32 packetNumber)
   return toRetx;
 }
 
-std::vector<QuicSocketTxItem*>
+std::vector<Ptr<QuicSocketTxItem>>
 QuicSocketTxBuffer::DetectLostPackets ()
 {
   NS_LOG_FUNCTION (this);
-  std::vector<QuicSocketTxItem*> lost;
+  std::vector<Ptr<QuicSocketTxItem>> lost;
 
   for (auto sent_it = m_sentList.begin ();
        sent_it != m_sentList.end () and !m_sentList.empty (); ++sent_it)
@@ -548,7 +554,7 @@ QuicSocketTxBuffer::CleanSentList ()
   while (!m_sentList.empty () && (*sent_it)->m_sacked && !(*sent_it)->m_lost)
     {
       // Remove ACKed packet from sent vector
-      QuicSocketTxItem *item = *sent_it;
+	  Ptr<QuicSocketTxItem> item = *sent_it;
       item->m_acked = true;
       m_sentSize -= item->m_packet->GetSize ();
       m_sentList.erase (sent_it);
@@ -684,7 +690,7 @@ QuicSocketTxBuffer::UpdatePacketSent (SequenceNumber32 seq, uint32_t sz)
       m_tcb->m_deliveredTime = Simulator::Now ();
     }
 
-  QuicSocketTxItem *item = nullptr;
+  Ptr<QuicSocketTxItem> item = nullptr;
   for (auto it = m_sentList.rbegin (); it != m_sentList.rend (); ++it)
     {
       if ((*it)->m_packetNumber == seq)
@@ -721,7 +727,7 @@ QuicSocketTxBuffer::GetRateSample ()
 }
 
 void
-QuicSocketTxBuffer::UpdateRateSample (QuicSocketTxItem *item)
+QuicSocketTxBuffer::UpdateRateSample (Ptr<QuicSocketTxItem> item)
 {
   NS_LOG_FUNCTION (this << item);
 

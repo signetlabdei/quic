@@ -65,7 +65,7 @@ public:
 	 *
 	 * \param item a smart pointer to a transmission item
 	 */
-	virtual void Add(QuicSocketTxItem *item, bool retx)
+	virtual void Add(Ptr<QuicSocketTxItem> item, bool retx)
 	{
 		NS_UNUSED(item);
 		NS_UNUSED(retx);
@@ -77,7 +77,7 @@ public:
 	 * \param numBytes number of bytes of the QuicSocketTxItem requested
 	 * \return the item that contains the right packet
 	 */
-	virtual QuicSocketTxItem* GetNewSegment(uint32_t numBytes)
+	virtual Ptr<QuicSocketTxItem> GetNewSegment(uint32_t numBytes)
 	{
 		NS_UNUSED(numBytes);
 		return nullptr;
@@ -117,12 +117,12 @@ public:
 	 */
 	void Print(std::ostream &os) const;
 
-	void Add(QuicSocketTxItem *item, bool retx);
-	QuicSocketTxItem* GetNewSegment(uint32_t numBytes);
+	void Add(Ptr<QuicSocketTxItem> item, bool retx);
+	Ptr<QuicSocketTxItem> GetNewSegment(uint32_t numBytes);
 	uint32_t AppSize(void) const;
 
 private:
-	typedef std::list<QuicSocketTxItem*> QuicTxPacketList; //!< container for data stored in the buffer
+	typedef std::list<Ptr<QuicSocketTxItem>> QuicTxPacketList; //!< container for data stored in the buffer
 
 	/**
 	 * \brief Merge two QuicSocketTxItem
