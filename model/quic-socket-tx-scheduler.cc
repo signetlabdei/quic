@@ -164,7 +164,7 @@ QuicSocketTxFifoScheduler::GetNewSegment (uint32_t numBytes)
           QuicSubheader qsb;
           currentPacket->PeekHeader (qsb);
           NS_LOG_INFO("Packet: stream " <<qsb.GetStreamId() << ", offset "<<qsb.GetOffset());
-          MergeItems (*outItem, *currentItem);
+          QuicSocketTxItem::MergeItems (*outItem, *currentItem);
           outItemSize += currentItem->m_packet->GetSize ();
 
           m_appList.erase (it);
@@ -244,7 +244,7 @@ QuicSocketTxFifoScheduler::GetNewSegment (uint32_t numBytes)
           toBeBuffered->m_packet = secondPartPacket;
           currentItem->m_packet = firstPartPacket;
 
-          MergeItems (*outItem, *currentItem);
+          QuicSocketTxItem::MergeItems (*outItem, *currentItem);
           outItemSize += currentItem->m_packet->GetSize ();
 
           m_appList.erase (it);
@@ -271,51 +271,6 @@ QuicSocketTxFifoScheduler::GetNewSegment (uint32_t numBytes)
   //Print(std::cout);
 
   return outItem;
-}
-
-
-
-void
-QuicSocketTxFifoScheduler::MergeItems (QuicSocketTxItem &t1,
-                                QuicSocketTxItem &t2) const
-{
-  NS_LOG_FUNCTION (this);
-
-  if (t1.m_sacked == true && t2.m_sacked == true)
-    {
-      t1.m_sacked = true;
-    }
-  else
-    {
-      t1.m_sacked = false;
-    }
-  if (t1.m_acked == true && t2.m_acked == true)
-    {
-      t1.m_acked = true;
-    }
-  else
-    {
-      t1.m_acked = false;
-    }
-
-  if (t2.m_retrans == true && t1.m_retrans == false)
-    {
-      t1.m_retrans = true;
-    }
-  if (t1.m_lastSent < t2.m_lastSent)
-    {
-      t1.m_lastSent = t2.m_lastSent;
-    }
-  if (t2.m_lost)
-    {
-      t1.m_lost = true;
-    }
-  if (t1.m_ackTime > t2.m_ackTime)
-    {
-      t1.m_ackTime = t2.m_ackTime;
-    }
-
-  t1.m_packet->AddAtEnd (t2.m_packet);
 }
 
 uint32_t

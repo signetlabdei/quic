@@ -123,23 +123,6 @@ public:
 
 private:
 	typedef std::list<Ptr<QuicSocketTxItem>> QuicTxPacketList; //!< container for data stored in the buffer
-
-	/**
-	 * \brief Merge two QuicSocketTxItem
-	 *
-	 * Merge t2 in t1. It consists in copying the lastSent field if t2 is more
-	 * recent than t1. Retransmitted field is copied only if it set in t2 but not
-	 * in t1. Sacked is copied only if it is true in both items.
-	 *
-	 * \param t1 first item
-	 * \param t2 second item
-	 */
-	void MergeItems(QuicSocketTxItem &t1, QuicSocketTxItem &t2) const;
-
-	// Available only for streams
-	void SplitItems(QuicSocketTxItem &t1, QuicSocketTxItem &t2,
-			uint32_t size) const;
-
 	QuicTxPacketList m_appList; //!< List of buffered application packets to be transmitted with additional info
 	uint32_t m_appSize;            //!< Size of all data in the application list
 };

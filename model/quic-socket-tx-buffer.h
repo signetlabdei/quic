@@ -72,6 +72,22 @@ public:
 	QuicSocketTxItem(const QuicSocketTxItem &other);
 
 	/**
+	 * \brief Merge two QuicSocketTxItem
+	 *
+	 * Merge t2 in t1. It consists in copying the lastSent field if t2 is more
+	 * recent than t1. Retransmitted field is copied only if it set in t2 but not
+	 * in t1. Sacked is copied only if it is true in both items.
+	 *
+	 * \param t1 first item
+	 * \param t2 second item
+	 */
+	static void MergeItems(QuicSocketTxItem &t1, QuicSocketTxItem &t2);
+
+	// Available only for streams
+	static void SplitItems(QuicSocketTxItem &t1, QuicSocketTxItem &t2,
+			uint32_t size);
+
+	/**
 	 * \brief Print the Item
 	 * \param os ostream
 	 */
@@ -87,6 +103,7 @@ public:
 	bool m_isStream0;                 //!< true for a frame from stream 0
 	Time m_lastSent;                  //!< time at which it was sent
 	Time m_ackTime; //!< time at which the packet was first acked (if m_sacked is true)
+	Time m_generated; //!< expiration deadline for the TX item
 
 	uint64_t m_delivered { 0 }; //!< Connection's delivered data at the time the packet was sent
 	Time m_deliveredTime { Time::Max() }; //!< Connection's delivered time at the time the packet was sent
@@ -298,6 +315,37 @@ public:
 	 */
 	bool GenerateRateSample();
 
+	/**
+	 * Set the latency bound for a specified stream
+	 *
+	 * \param streamId The stream ID
+	 * \param latency The stream's maximum latency
+	 */
+	void SetLatency(uint32_t streamId, Time latency);
+
+	/**
+	 * Get the latency bound for a specified stream
+	 *
+	 * \param streamId The stream ID
+	 * \return The stream's maximum latency, or 0 if the stream is not registered
+	 */
+	Time GetLatency(uint32_t streamId);
+
+	/**
+	 * Set the default latency bound
+	 *
+	 * \param latency The default maximum latency
+	 */
+	void SetDefaultLatency(Time latency);
+
+	/**
+	 * Get the default latency bound
+	 *
+	 * \param streamId The stream ID
+	 * \return The default maximum latency
+	 */
+	Time GetDefaultLatency();
+
 private:
 	typedef std::list<Ptr<QuicSocketTxItem>> QuicTxPacketList; //!< container for data stored in the buffer
 
@@ -306,21 +354,7 @@ private:
 	 */
 	void CleanSentList();
 
-	/**
-	 * \brief Merge two QuicSocketTxItem
-	 *
-	 * Merge t2 in t1. It consists in copying the lastSent field if t2 is more
-	 * recent than t1. Retransmitted field is copied only if it set in t2 but not
-	 * in t1. Sacked is copied only if it is true in both items.
-	 *
-	 * \param t1 first item
-	 * \param t2 second item
-	 */
-	void MergeItems(QuicSocketTxItem &t1, QuicSocketTxItem &t2) const;
 
-	// Available only for streams
-	void SplitItems(QuicSocketTxItem &t1, QuicSocketTxItem &t2,
-			uint32_t size) const;
 
 	QuicTxPacketList m_sentList;  //!< List of sent packets with additional info
 	QuicTxPacketList m_streamZeroList; //!< List of waiting stream 0 packets with additional info

@@ -557,6 +557,37 @@ public:
   virtual enum SocketErrno GetErrno (void) const;
   virtual enum SocketType GetSocketType (void) const;
 
+	/**
+	 * Set the latency bound for a specified stream
+	 *
+	 * \param streamId The stream ID
+	 * \param latency The stream's maximum latency
+	 */
+	void SetLatency(uint32_t streamId, Time latency);
+
+	/**
+	 * Get the latency bound for a specified stream
+	 *
+	 * \param streamId The stream ID
+	 * \return The stream's maximum latency, or 0 if the stream is not registered
+	 */
+	Time GetLatency(uint32_t streamId);
+
+	/**
+	 * Set the default latency bound
+	 *
+	 * \param latency The default maximum latency
+	 */
+	void SetDefaultLatency(Time latency);
+
+	/**
+	 * Get the default latency bound
+	 *
+	 * \param streamId The stream ID
+	 * \return The default maximum latency
+	 */
+	Time GetDefaultLatency();
+
   /**
    * \brief TracedCallback signature for QUIC packet transmission or reception events.
    *
@@ -714,6 +745,7 @@ protected:
   uint32_t m_socketRxBufferSize;                          //!< Size of the socket RX buffer
   std::vector<SequenceNumber32> m_receivedPacketNumbers;  //!< Received packet number vector
   TypeId m_schedulingTypeId;  							  //!< The socket type of the packet scheduler
+  Time m_defaultLatency;								  //!< The default latency bound (only used by the EDF scheduler)
 
   // State-related attributes
   TracedValue<QuicStates_t> m_socketState;  //!< State in the Congestion state machine

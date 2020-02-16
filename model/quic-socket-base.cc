@@ -224,9 +224,14 @@ QuicSocketBase::GetTypeId (void)
                     QuicSocketBase::MIN_INITIAL_PACKET_SIZE, UINT32_MAX))
 	.AddAttribute ("SchedulingPolicy",
 				   "Scheduling policy among streams",
-				   TypeIdValue (QuicSocketTxPFifoScheduler::GetTypeId ()),
+				   TypeIdValue (QuicSocketTxFifoScheduler::GetTypeId ()),
 				   MakeTypeIdAccessor (&QuicSocketBase::m_schedulingTypeId),
 				   MakeTypeIdChecker ())
+	.AddAttribute ("DefaultLatency",
+				   "Default latency bound for the EDF scheduler",
+                   TimeValue (MilliSeconds (100)),
+                   MakeTimeAccessor (&QuicSocketBase::m_defaultLatency),
+                   MakeTimeChecker ())
 //    .AddAttribute (
 //                   "LegacyCongestionControl",
 //                   "When true, use TCP implementations for the congestion control",
@@ -1922,6 +1927,7 @@ QuicSocketBase::InitializeScheduling()
   schedulerFactory.SetTypeId (m_schedulingTypeId);
   Ptr<QuicSocketTxScheduler> sched = schedulerFactory.Create<QuicSocketTxScheduler> ();
   m_txBuffer->SetScheduler(sched);
+  SetDefaultLatency(m_defaultLatency);
 }
 
 uint64_t
@@ -3085,6 +3091,22 @@ uint32_t
 QuicSocketBase::GetInitialPacketSize () const
 {
   return m_initialPacketSize;
+}
+
+void QuicSocketBase::SetLatency(uint32_t streamId, Time latency) {
+	m_txBuffer->SetLatency(streamId, latency);
+}
+
+Time QuicSocketBase::GetLatency(uint32_t streamId) {
+	return m_txBuffer->GetLatency(streamId);
+}
+
+void QuicSocketBase::SetDefaultLatency(Time latency) {
+	m_txBuffer->SetDefaultLatency(latency);
+}
+
+Time QuicSocketBase::GetDefaultLatency() {
+	return m_txBuffer->GetDefaultLatency();
 }
 
 void

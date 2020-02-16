@@ -22,22 +22,23 @@
  *          
  */
 
-#ifndef QUICSOCKETTXPFIFOSCHEDULER_H
-#define QUICSOCKETTXPFIFOSCHEDULER_H
+#ifndef QUICSOCKETTXEDFSCHED_H
+#define QUICSOCKETTXEDFSCHED_H
 
 #include "quic-socket-tx-scheduler.h"
 #include <queue>
+#include <map>
 #include <vector>
 
 namespace ns3
 {
 
 /**
- * \brief The PFIFO implementation
+ * \brief The EDF implementation
  *
- * This class is a Priority FIFO implementation of the socket scheduler, which prioritizes streams with a lower stream number
+ * This class is an Earliest Deadline First implementation of the socket scheduler, which prioritizes the packet with the earliest deadline
  */
-class QuicSocketTxPFifoScheduler: public QuicSocketTxScheduler
+class QuicSocketTxEdfScheduler: public QuicSocketTxScheduler
 {
 public:
 	/**
@@ -46,9 +47,9 @@ public:
 	 */
 	static TypeId GetTypeId(void);
 
-	QuicSocketTxPFifoScheduler();
-	QuicSocketTxPFifoScheduler(const QuicSocketTxPFifoScheduler &other);
-	~QuicSocketTxPFifoScheduler(void);
+	QuicSocketTxEdfScheduler();
+	QuicSocketTxEdfScheduler(const QuicSocketTxEdfScheduler &other);
+	~QuicSocketTxEdfScheduler(void);
 
 	/**
 	 * Print the scheduler buffer information to a string
@@ -61,15 +62,45 @@ public:
 	Ptr<QuicSocketTxItem> GetNewSegment(uint32_t numBytes);
 	uint32_t AppSize(void) const;
 
+	/**
+	 * Set the latency bound for a specified stream
+	 *
+	 * \param streamId The stream ID
+	 * \param latency The stream's maximum latency
+	 */
+	void SetLatency(uint32_t streamId, Time latency);
+
+	/**
+	 * Get the latency bound for a specified stream
+	 *
+	 * \param streamId The stream ID
+	 * \return The stream's maximum latency, or 0 if the stream is not registered
+	 */
+	Time GetLatency(uint32_t streamId);
+
+	/**
+	 * Set the default latency bound
+	 *
+	 * \param latency The default maximum latency
+	 */
+	void SetDefaultLatency(Time latency);
+
+	/**
+	 * Get the default latency bound
+	 *
+	 * \param streamId The stream ID
+	 * \return The default maximum latency
+	 */
+	Time GetDefaultLatency();
+
 private:
+
 	struct PriorityTxItem
 	{
-		uint64_t streamId;
-		uint64_t offset;
+		Time deadline;
 		Ptr<QuicSocketTxItem> item;
-		PriorityTxItem(uint64_t id, uint64_t off, Ptr<QuicSocketTxItem> it) :
-			streamId(id),
-			offset(off),
+		PriorityTxItem(Time dl, Ptr<QuicSocketTxItem> it) :
+			deadline(dl),
 			item(it)
 			{
 			}
@@ -78,19 +109,24 @@ private:
 	{
 		bool operator()(PriorityTxItem const &it1, PriorityTxItem const &it2)
 		{
-			if (it1.streamId != it2.streamId)
-				return it1.streamId > it2.streamId;
-			else
-				return it1.offset > it2.offset;
+			return it1.deadline < it2.deadline;
 		}
 	};
 	typedef std::priority_queue<PriorityTxItem, std::vector<PriorityTxItem>, ItemComp> QuicTxPacketList; //!< container for data stored in the buffer
 
+	/**
+	 * Gets the deadline for a transmission item
+	 * \param item The pointer to the item
+	 */
+	Time GetDeadline(Ptr<QuicSocketTxItem> item);
+
 	QuicTxPacketList m_appList; //!< List of buffered application packets to be transmitted with additional info
 	uint32_t m_appSize;            //!< Size of all data in the application list
 	bool m_retxFirst;
+	Time m_defaultLatency;
+	std::map<uint32_t, Time> m_latencyMap;
 };
 
 } // namepsace ns3
 
-#endif /* QUIC_SOCKET_TX_PFIFO_SCHEDULER_H */
+#endif /* QUIC_SOCKET_TX_EDF_SCHEDULER_H */

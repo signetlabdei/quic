@@ -22,7 +22,7 @@
  *          
  */
 
-#include "quic-socket-tx-pfifo-scheduler.h"
+#include "quic-socket-tx-edf-scheduler.h"
 
 #include <algorithm>
 #include <iostream>
@@ -37,39 +37,39 @@
 
 namespace ns3 {
 
-NS_LOG_COMPONENT_DEFINE("QuicSocketTxPFifoScheduler");
+NS_LOG_COMPONENT_DEFINE("QuicSocketTxEdfScheduler");
 
-NS_OBJECT_ENSURE_REGISTERED(QuicSocketTxPFifoScheduler);
+NS_OBJECT_ENSURE_REGISTERED(QuicSocketTxEdfScheduler);
 
-TypeId QuicSocketTxPFifoScheduler::GetTypeId(void) {
-	static TypeId tid = TypeId("ns3::QuicSocketTxPFifoScheduler").SetParent<
+TypeId QuicSocketTxEdfScheduler::GetTypeId(void) {
+	static TypeId tid = TypeId("ns3::QuicSocketTxEdfScheduler").SetParent<
 			QuicSocketTxScheduler>().SetGroupName("Internet").AddConstructor<
-			QuicSocketTxPFifoScheduler>().AddAttribute("RetxFirst",
+			QuicSocketTxEdfScheduler>().AddAttribute("RetxFirst",
 			"Prioritize retransmissions regardless of stream",
 			BooleanValue(false),
-			MakeBooleanAccessor(&QuicSocketTxPFifoScheduler::m_retxFirst),
+			MakeBooleanAccessor(&QuicSocketTxEdfScheduler::m_retxFirst),
 			MakeBooleanChecker());
 	return tid;
 }
 
-QuicSocketTxPFifoScheduler::QuicSocketTxPFifoScheduler() :
+QuicSocketTxEdfScheduler::QuicSocketTxEdfScheduler() :
 		QuicSocketTxScheduler(), m_appSize(0), m_retxFirst(false) {
 	m_appList = QuicTxPacketList();
 }
 
-QuicSocketTxPFifoScheduler::QuicSocketTxPFifoScheduler(
-		const QuicSocketTxPFifoScheduler &other) :
+QuicSocketTxEdfScheduler::QuicSocketTxEdfScheduler(
+		const QuicSocketTxEdfScheduler &other) :
 		QuicSocketTxScheduler(other), m_appSize(other.m_appSize), m_retxFirst(
 				other.m_retxFirst) {
 	m_appList = other.m_appList;
 }
 
-QuicSocketTxPFifoScheduler::~QuicSocketTxPFifoScheduler(void) {
+QuicSocketTxEdfScheduler::~QuicSocketTxEdfScheduler(void) {
 	m_appList = QuicTxPacketList();
 	m_appSize = 0;
 }
 
-void QuicSocketTxPFifoScheduler::Print(std::ostream &os) const {
+void QuicSocketTxEdfScheduler::Print(std::ostream &os) const {
 	NS_LOG_FUNCTION(this);
 	QuicTxPacketList temp = QuicTxPacketList(m_appList);
 	std::stringstream as;
@@ -84,13 +84,13 @@ void QuicSocketTxPFifoScheduler::Print(std::ostream &os) const {
 			<< "\n\nCurrent Status: \nApplication Size = " << m_appSize;
 }
 
-void QuicSocketTxPFifoScheduler::Add(Ptr<QuicSocketTxItem> item, bool retx) {
+void QuicSocketTxEdfScheduler::Add(Ptr<QuicSocketTxItem> item, bool retx) {
 	NS_LOG_FUNCTION(this << item);
 
 	if (retx) {
 		if (m_retxFirst) {
 			NS_LOG_INFO("Adding retransmitted packet with highest priority");
-			m_appList.push(PriorityTxItem(0, 0, item));
+			m_appList.push(PriorityTxItem(Seconds(0), item));
 			m_appSize += item->m_packet->GetSize();
 		} else {
 			uint32_t dataSizeByte = item->m_packet->GetSize();
@@ -111,7 +111,8 @@ void QuicSocketTxPFifoScheduler::Add(Ptr<QuicSocketTxItem> item, bool retx) {
 					NS_LOG_INFO(
 							"subheader " << sub << " dataSizeByte " << dataSizeByte << " remaining " << item->m_packet->GetSize () << " frame size " << sub.GetLength ());
 					Ptr<Packet> nextFragment = item->m_packet->Copy();
-					nextFragment->RemoveAtEnd(nextFragment->GetSize() - sub.GetLength());
+					nextFragment->RemoveAtEnd(
+							nextFragment->GetSize() - sub.GetLength());
 					NS_LOG_INFO("fragment size " << nextFragment->GetSize());
 
 					// remove the first portion of the packet
@@ -119,23 +120,21 @@ void QuicSocketTxPFifoScheduler::Add(Ptr<QuicSocketTxItem> item, bool retx) {
 					item->m_packet->RemoveAtStart(sub.GetLength());
 					nextFragment->AddHeader(sub);
 					start += nextFragment->GetSize();
-					Ptr<QuicSocketTxItem> it = CreateObject<QuicSocketTxItem>(*item);
+					Ptr<QuicSocketTxItem> it = CreateObject<QuicSocketTxItem>(
+							*item);
 					uint64_t streamId = sub.GetStreamId();
 					uint64_t offset = sub.GetOffset();
 					it->m_packet = nextFragment;
 					NS_LOG_INFO(
 							"Added retx fragment on stream " << streamId << " with offset " << offset << " and length " << it->m_packet->GetSize() << ", pointer " << GetPointer(it->m_packet));
-					PriorityTxItem pItem = PriorityTxItem(streamId, offset,
-							it);
+					PriorityTxItem pItem = PriorityTxItem(GetDeadline(it), it);
 					m_appList.push(pItem);
 					m_appSize += it->m_packet->GetSize();
 				}
 			} else {
 				NS_LOG_INFO(
 						"Added retx packet on stream " << sub.GetStreamId() << " with offset " << sub.GetOffset());
-				m_appList.push(
-						PriorityTxItem(sub.GetStreamId(), sub.GetOffset(),
-								item));
+				m_appList.push(PriorityTxItem(GetDeadline(item), item));
 				m_appSize += item->m_packet->GetSize();
 			}
 		}
@@ -144,16 +143,13 @@ void QuicSocketTxPFifoScheduler::Add(Ptr<QuicSocketTxItem> item, bool retx) {
 		item->m_packet->PeekHeader(sub);
 		NS_LOG_INFO(
 				"Added packet on stream " << sub.GetStreamId() << " with offset " << sub.GetOffset());
-		m_appList.push(
-				PriorityTxItem(sub.GetStreamId(), sub.GetOffset(), item));
+		m_appList.push(PriorityTxItem(GetDeadline(item), item));
 		m_appSize += item->m_packet->GetSize();
 	}
-	NS_LOG_WARN("pkt " << m_appList.top().offset << " size "<< m_appList.top().item->m_packet->GetSize());
-	NS_LOG_INFO(m_appList.top().item);
 }
 
-Ptr<QuicSocketTxItem>
-QuicSocketTxPFifoScheduler::GetNewSegment(uint32_t numBytes) {
+Ptr<QuicSocketTxItem> QuicSocketTxEdfScheduler::GetNewSegment(
+		uint32_t numBytes) {
 	NS_LOG_FUNCTION(this << numBytes);
 
 	bool firstSegment = true;
@@ -171,8 +167,6 @@ QuicSocketTxPFifoScheduler::GetNewSegment(uint32_t numBytes) {
 		currentPacket = currentItem->m_packet;
 
 		NS_LOG_INFO(currentItem << " "<<GetPointer(currentPacket));
-
-		NS_LOG_INFO("Considering packet on stream "<< currentPriorityItem.streamId << " offset "<< currentPriorityItem.offset << " size "<< currentPacket->GetSize());
 
 		if (outItemSize + currentItem->m_packet->GetSize() /*- subheaderSize*/
 		<= numBytes)       // Merge
@@ -269,8 +263,7 @@ QuicSocketTxPFifoScheduler::GetNewSegment(uint32_t numBytes) {
 
 			m_appList.pop();
 			PriorityTxItem bufferedPriorityItem = PriorityTxItem(
-					currentPriorityItem.streamId, newQsbToBuffer.GetOffset(),
-					toBeBuffered);
+					currentPriorityItem.deadline, toBeBuffered);
 			m_appList.push(bufferedPriorityItem);
 			m_appSize += toBeBuffered->m_packet->GetSize();
 			// check correctness of application size
@@ -297,8 +290,38 @@ QuicSocketTxPFifoScheduler::GetNewSegment(uint32_t numBytes) {
 	return outItem;
 }
 
-uint32_t QuicSocketTxPFifoScheduler::AppSize(void) const {
+void QuicSocketTxEdfScheduler::SetLatency(uint32_t streamId, Time latency) {
+	m_latencyMap[streamId] = latency;
+}
+
+Time QuicSocketTxEdfScheduler::GetLatency(uint32_t streamId) {
+	Time latency = m_defaultLatency;
+	try {
+		latency = m_latencyMap.at(streamId);
+	} catch (int e) {
+		NS_LOG_INFO(
+				"Stream " << streamId <<" does not have a pre-specified latency, using default");
+	}
+	return latency;
+}
+
+void QuicSocketTxEdfScheduler::SetDefaultLatency(Time latency) {
+	m_defaultLatency = latency;
+}
+
+Time QuicSocketTxEdfScheduler::GetDefaultLatency() {
+	return m_defaultLatency;
+}
+
+uint32_t QuicSocketTxEdfScheduler::AppSize(void) const {
 	return m_appSize;
+}
+
+Time QuicSocketTxEdfScheduler::GetDeadline(Ptr<QuicSocketTxItem> item) {
+	Ptr<Packet> packet = item->m_packet;
+	QuicSubheader sub;
+	packet->PeekHeader(sub);
+	return item->m_generated + GetLatency(sub.GetStreamId());
 }
 
 }
