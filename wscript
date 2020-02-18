@@ -24,6 +24,7 @@ def build(bld):
         'model/quic-header.cc',
         'model/quic-subheader.cc',
         'model/quic-transport-parameters.cc',
+        'model/quic-bbr.cc',
         'helper/quic-helper.cc'
         ]
 
@@ -52,7 +53,9 @@ def build(bld):
         'model/quic-header.h',
         'model/quic-subheader.h',
         'model/quic-transport-parameters.h',
-        'helper/quic-helper.h'
+        'model/quic-bbr.h',
+        'helper/quic-helper.h',
+        'model/windowed-filter.h'
         ]
 
     if bld.env.ENABLE_EXAMPLES:
