@@ -764,7 +764,8 @@ QuicSocketBase::Listen (void)
       return -1;
     }
 
-  NS_ASSERT (m_quicl4->SetListener (this));
+  bool res = m_quicl4->SetListener (this);
+  NS_ASSERT (res);
 
   SetState (LISTENING);
 
