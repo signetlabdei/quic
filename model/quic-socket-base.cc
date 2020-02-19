@@ -2226,11 +2226,9 @@ QuicSocketBase::OnSendingAckFrame ()
   QuicSubheader sub = QuicSubheader::CreateAck (
       largestAcknowledged.GetValue (), ack_delay, largestAcknowledged.GetValue (),
       gaps, additionalAckBlocks);
-  QuicSubheader maxData = QuicSubheader::CreateMaxData(m_quicl5->GetMaxData());
 
   Ptr<Packet> ackFrame = Create<Packet> ();
   ackFrame->AddHeader (sub);
-  ackFrame->AddHeader(maxData);
   return ackFrame;
 }
 

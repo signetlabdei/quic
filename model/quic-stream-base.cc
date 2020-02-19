@@ -56,15 +56,18 @@ QuicStreamBase::GetTypeId (void)
     .AddAttribute ("StreamSndBufSize",
                    "QuicStreamBase maximum transmit buffer size (bytes)",
                    UintegerValue (131072), // 128k
-                   MakeUintegerAccessor (&QuicStreamBase::GetStreamSndBufSize,
-                                         &QuicStreamBase::SetStreamSndBufSize),
+                   MakeUintegerAccessor (&QuicStreamBase::m_streamTxBufferSize),
                    MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("StreamRcvBufSize",
                    "QuicStreamBase maximum receive buffer size (bytes)",
                    UintegerValue (131072), // 128k
-                   MakeUintegerAccessor (&QuicStreamBase::GetStreamRcvBufSize,
-                                         &QuicStreamBase::SetStreamRcvBufSize),
+                   MakeUintegerAccessor (&QuicStreamBase::m_streamRxBufferSize),
                    MakeUintegerChecker<uint32_t> ())
+	.AddAttribute ("MaxDataInterval",
+				   "Interval between MAX_DATA frames",
+				   UintegerValue (131072), // 128k
+				   MakeUintegerAccessor (&QuicStreamBase::m_maxDataInterval),
+				   MakeUintegerChecker<uint32_t> ())
   ;
   return tid;
 }
@@ -76,7 +79,7 @@ QuicStreamBase::GetInstanceTypeId () const
 }
 
 
-QuicStreamBase::QuicStreamBase (void)
+QuicStreamBase::QuicStreamBase (void) // @suppress("Class members should be properly initialized")
   : QuicStream (),
     m_streamType (NONE),
     m_streamDirectionType (UNKNOWN),
@@ -87,6 +90,7 @@ QuicStreamBase::QuicStreamBase (void)
     m_streamId (0),
     m_quicl5 (0),
     m_maxStreamData (0),
+	m_maxAdvertisedData (0),
     m_sentSize (0),
     m_recvSize (0),
     m_fin (false)
@@ -106,6 +110,8 @@ QuicStreamBase::SetQuicL5 (Ptr<QuicL5Protocol> quicl5)
 {
   NS_LOG_FUNCTION (this);
   m_quicl5 = quicl5;
+  SetStreamRcvBufSize(m_streamRxBufferSize);
+  SetStreamRcvBufSize(m_streamTxBufferSize);
 }
 
 
@@ -246,9 +252,7 @@ QuicStreamBase::SendDataFrame (SequenceNumber32 seq, uint32_t maxSize)
   bool lengthBit = true;
 
   QuicSubheader sub = QuicSubheader::CreateStreamSubHeader (m_streamId, (uint64_t)seq.GetValue (), frame->GetSize (), m_sentSize != 0, lengthBit, m_fin);
-  sub.SetMaxStreamData (m_recvSize + m_rxBuffer->Available ());
   m_sentSize += frame->GetSize ();
-  NS_LOG_DEBUG ("Sending RWND = " << sub.GetMaxStreamData ());
 
   frame->AddHeader (sub);
   int size = m_quicl5->Send (frame);
@@ -429,12 +433,15 @@ QuicStreamBase::Recv (Ptr<Packet> frame, const QuicSubheader& sub, Address &addr
           NS_LOG_INFO ("Received a frame with the correct order of size " << sub.GetLength ());
           m_recvSize += sub.GetLength ();
 
-          QuicSubheader sub;
-          sub.SetMaxStreamData (m_recvSize + m_rxBuffer->Available ());
-          // build empty packet
-          Ptr<Packet> maxStream = Create<Packet> (0);
-          maxStream->AddHeader (sub);
-          m_quicl5->Send (maxStream);
+          if (m_maxAdvertisedData == 0 || m_recvSize + m_rxBuffer->Available () > m_maxAdvertisedData + m_maxDataInterval)
+          {
+        	m_maxAdvertisedData = m_recvSize + m_rxBuffer->Available ();
+            QuicSubheader sub = QuicSubheader::CreateMaxData(m_recvSize + m_rxBuffer->Available ());
+            // build empty packet
+            Ptr<Packet> maxStream = Create<Packet> (0);
+            maxStream->AddHeader (sub);
+            m_quicl5->Send (maxStream);
+          }
 
           NS_LOG_LOGIC ("Try to Flush RxBuffer if Available - offset " << m_recvSize);
           // check if the packets in the RX buffer can be released (in order release)

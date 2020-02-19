@@ -242,9 +242,6 @@ QuicSocketTxPFifoScheduler::GetNewSegment(uint32_t numBytes) {
 			QuicSubheader newQsbToBuffer = QuicSubheader::CreateStreamSubHeader(
 					qsb.GetStreamId(), newOffset, newLength, newOffBit,
 					newLengthBit, oldFinBit);
-			newQsbToTx.SetMaxStreamData(qsb.GetMaxStreamData());
-			newQsbToBuffer.SetMaxStreamData(qsb.GetMaxStreamData());
-
 			Ptr<Packet> firstPartPacket = currentItem->m_packet->CreateFragment(
 					0, newPacketSize);
 			NS_ASSERT_MSG(firstPartPacket->GetSize() == newPacketSize,

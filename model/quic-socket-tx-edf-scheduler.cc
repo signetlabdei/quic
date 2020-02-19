@@ -55,6 +55,7 @@ TypeId QuicSocketTxEdfScheduler::GetTypeId(void) {
 QuicSocketTxEdfScheduler::QuicSocketTxEdfScheduler() :
 		QuicSocketTxScheduler(), m_appSize(0), m_retxFirst(false) {
 	m_appList = QuicTxPacketList();
+	m_defaultLatency = Seconds(0.1);
 }
 
 QuicSocketTxEdfScheduler::QuicSocketTxEdfScheduler(
@@ -62,6 +63,8 @@ QuicSocketTxEdfScheduler::QuicSocketTxEdfScheduler(
 		QuicSocketTxScheduler(other), m_appSize(other.m_appSize), m_retxFirst(
 				other.m_retxFirst) {
 	m_appList = other.m_appList;
+	m_defaultLatency = other.m_defaultLatency;
+	m_latencyMap = other.m_latencyMap;
 }
 
 QuicSocketTxEdfScheduler::~QuicSocketTxEdfScheduler(void) {
@@ -236,8 +239,6 @@ Ptr<QuicSocketTxItem> QuicSocketTxEdfScheduler::GetNewSegment(
 			QuicSubheader newQsbToBuffer = QuicSubheader::CreateStreamSubHeader(
 					qsb.GetStreamId(), newOffset, newLength, newOffBit,
 					newLengthBit, oldFinBit);
-			newQsbToTx.SetMaxStreamData(qsb.GetMaxStreamData());
-			newQsbToBuffer.SetMaxStreamData(qsb.GetMaxStreamData());
 
 			Ptr<Packet> firstPartPacket = currentItem->m_packet->CreateFragment(
 					0, newPacketSize);
