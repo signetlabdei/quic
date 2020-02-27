@@ -65,7 +65,7 @@ QuicStreamBase::GetTypeId (void)
                    MakeUintegerChecker<uint32_t> ())
 	.AddAttribute ("MaxDataInterval",
 				   "Interval between MAX_DATA frames",
-				   UintegerValue (131072), // 128k
+				   UintegerValue (15000), // 10 packets
 				   MakeUintegerAccessor (&QuicStreamBase::m_maxDataInterval),
 				   MakeUintegerChecker<uint32_t> ())
   ;

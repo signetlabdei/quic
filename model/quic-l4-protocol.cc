@@ -94,7 +94,7 @@ QuicUdpBinding::GetTypeId (void)
                    MakePointerAccessor (&QuicUdpBinding::m_quicSocket),
                    MakePointerChecker<QuicSocketBase> ())
     ;
-  NS_LOG_UNCOND("QuicUdpBinding");
+  //NS_LOG_UNCOND("QuicUdpBinding");
   return tid;
 }
 

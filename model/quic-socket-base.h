@@ -318,6 +318,8 @@ public:
    */
   uint32_t ConnectionWindow () const;
 
+
+
   /**
    * \brief Return total bytes in flight
    *
@@ -464,6 +466,14 @@ public:
    */
   void UpdateSsThresh (uint32_t oldValue, uint32_t newValue);
   
+  /**
+   * \brief Callback function to hook to QuicSocketState PacingRate
+   * \param oldValue old pacing Rate value
+   * \param newValue new pacing Rate value
+   */
+  void UpdateCurrentPacingRate (DataRate oldValue, DataRate newValue);
+
+
   /**
    * \brief Callback function to hook to QuicSocketState congestion state
    *
@@ -792,6 +802,8 @@ protected:
   bool m_quicCongestionControlLegacy;             //!< Quic Congestion control if true, TCP Congestion control if false
   bool m_queue_ack;                               //!< Indicates a request for a queue ACK if true
   uint32_t m_numPacketsReceivedSinceLastAckSent;  //!< Number of packets received since last ACK sent
+  uint32_t m_lastMaxData;						  //!< Last MaxData ACK
+  uint32_t m_maxDataInterval;					  //!< Interval between successive MaxData frames in ACKs
 
   uint32_t m_initialPacketSize; //!< size of the first packet to be sent durin the handshake (at least 1200 bytes, per RFC)
 
@@ -829,6 +841,12 @@ protected:
 
   TracedCallback<Ptr<const Packet>, const QuicHeader&,
                  Ptr<const QuicSocketBase> > m_rxTrace; //!< Trace of received packets
+
+
+  /**
+   * \brief Callback pointer for PacingRate trace chaining
+   */
+  TracedCallback<DataRate, DataRate> m_currentPacingRateTrace;
 };
 
 } //namespace ns3

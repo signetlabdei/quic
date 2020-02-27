@@ -52,7 +52,7 @@ struct RateSample {
 	uint32_t m_priorInFlight;
 	uint32_t m_ackBytesSent { 0 }; //!< amount of ACK-only bytes sent over the sampling interval
 	uint32_t m_priorAckBytesSent { 0 }; //!< amount of ACK-only bytes sent up to a flight ago
-	uint8_t m_ackBytesSentWin { 0 };
+	uint8_t m_ackBytesMaxWin { 0 };
 };
 
 /**

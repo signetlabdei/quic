@@ -136,7 +136,7 @@ protected:
    * \param tcb a smart pointer to the SocketState (it accepts a QuicSocketState)
    * \param ackedPacked the acked packet
    */
-  virtual void OnPacketAcked (Ptr<TcpSocketState> tcb, QuicSocketTxItem &ackedPacket);
+  virtual void OnPacketAcked (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPacket);
 
   /**
    * \brief Check if in recovery period
@@ -153,7 +153,7 @@ protected:
    * \param tcb a smart pointer to the SocketState (it accepts a QuicSocketState)
    * \param ackedPacked the acked packet
    */
-  void OnPacketAckedCC (Ptr<TcpSocketState> tcb, QuicSocketTxItem & ackedPacket);
+  void OnPacketAckedCC (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPacket);
 
   /**
    * \brief Method called when retransmission timeout fires. It updates the quantities in the tcb.
