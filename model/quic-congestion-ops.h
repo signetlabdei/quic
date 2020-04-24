@@ -105,7 +105,7 @@ public:
    * \param newAcks the newly acked packets
    * \param rs the connection RateSample
    */
-  virtual void OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack, std::vector<QuicSocketTxItem*> newAcks,
+  virtual void OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack, std::vector<Ptr<QuicSocketTxItem>> newAcks,
                       const struct RateSample *rs);
 
   /**
@@ -115,7 +115,7 @@ public:
    * \param tcb a smart pointer to the SocketState (it accepts a QuicSocketState)
    * \param lostPackets the lost packets
    */
-  virtual void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem*> lostPackets);
+  virtual void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxItem>> lostPackets);
 
 protected:
   // QuicCongestionControl Draft10
@@ -136,7 +136,7 @@ protected:
    * \param tcb a smart pointer to the SocketState (it accepts a QuicSocketState)
    * \param ackedPacked the acked packet
    */
-  virtual void OnPacketAcked (Ptr<TcpSocketState> tcb, QuicSocketTxItem &ackedPacket);
+  virtual void OnPacketAcked (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPacket);
 
   /**
    * \brief Check if in recovery period
@@ -153,7 +153,7 @@ protected:
    * \param tcb a smart pointer to the SocketState (it accepts a QuicSocketState)
    * \param ackedPacked the acked packet
    */
-  void OnPacketAckedCC (Ptr<TcpSocketState> tcb, QuicSocketTxItem & ackedPacket);
+  void OnPacketAckedCC (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPacket);
 
   /**
    * \brief Method called when retransmission timeout fires. It updates the quantities in the tcb.

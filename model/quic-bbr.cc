@@ -559,6 +559,7 @@ QuicBbr::WhichState (BbrMode_t mode) const
       return "BBR_PROBE_RTT";
     }
   NS_ASSERT (false);
+  return "";
 }
 
 void
@@ -705,7 +706,7 @@ QuicBbr::OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, b
 
 void
 QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
-                    std::vector<QuicSocketTxItem *> newAcks,
+                    std::vector<Ptr<QuicSocketTxItem>> newAcks,
                     const struct RateSample *rs)
 {
   NS_LOG_FUNCTION (this);
@@ -716,7 +717,7 @@ QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
   tcbd->m_largestAckedPacket = SequenceNumber32 (ack.GetLargestAcknowledged ());
 
   // newAcks are ordered from the highest packet number to the smalles
-  QuicSocketTxItem *lastAcked = newAcks.at (0);
+  Ptr<QuicSocketTxItem> lastAcked = newAcks.at (0);
 
   NS_LOG_LOGIC ("Updating RTT estimate");
   // If the largest acked is newly acked, update the RTT.
@@ -727,7 +728,9 @@ QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
     }
 
   // Precess end of recovery
-  if (tcbd->m_endOfRecovery <= tcbd->m_largestAckedPacket)
+  if ((tcbd->m_congState == TcpSocketState::CA_RECOVERY or
+       tcbd->m_congState == TcpSocketState::CA_LOSS) and
+       tcbd->m_endOfRecovery <= tcbd->m_largestAckedPacket)
     {
       tcbd->m_congState = TcpSocketState::CA_OPEN;
       CongestionStateSet (tcb, TcpSocketState::CA_OPEN);
@@ -740,14 +743,14 @@ QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
     {
       if ((*it)->m_acked)
         {
-          OnPacketAcked (tcb, (**it));
+          OnPacketAcked (tcb, (*it));
         }
     }
   CongControl (tcbd, rs);
 }
 
 void
-QuicBbr::OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem *> lostPackets)
+QuicBbr::OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxItem>> lostPackets)
 {
   NS_LOG_LOGIC (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState *> (&(*tcb));
@@ -767,7 +770,7 @@ QuicBbr::OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem *>
 }
 
 void
-QuicBbr::OnPacketAcked (Ptr<TcpSocketState> tcb, QuicSocketTxItem &ackedPacket)
+QuicBbr::OnPacketAcked (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPacket)
 {
   NS_LOG_FUNCTION (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
@@ -776,7 +779,7 @@ QuicBbr::OnPacketAcked (Ptr<TcpSocketState> tcb, QuicSocketTxItem &ackedPacket)
   NS_LOG_LOGIC ("Handle possible RTO");
   // If a packet sent prior to RTO was acked, then the RTO  was spurious. Otherwise, inform congestion control.
   if (tcbd->m_rtoCount > 0
-      and ackedPacket.m_packetNumber > tcbd->m_largestSentBeforeRto)
+      and ackedPacket->m_packetNumber > tcbd->m_largestSentBeforeRto)
     {
       OnRetransmissionTimeoutVerified (tcb);
     }

@@ -25,6 +25,8 @@
 #include "ns3/test.h"
 #include "ns3/quic-socket-tx-buffer.h"
 #include "ns3/quic-stream-tx-buffer.h"
+#include "ns3/quic-socket-tx-scheduler.h"
+
 
 #include "ns3/quic-socket-base.h"
 #include "ns3/packet.h"
@@ -201,8 +203,12 @@ QuicTxBufferTestCase::TestRetransmission ()
   // create the buffer
   QuicSocketTxBuffer txBuf;
   Ptr<QuicSocketState> tcbd;
+  Ptr<QuicSocketTxScheduler> sched;
 
+  sched = CreateObject<QuicSocketTxFifoScheduler> ();
   tcbd = CreateObject<QuicSocketState> ();
+
+  txBuf.SetScheduler(sched);
 
   NS_TEST_ASSERT_MSG_EQ(txBuf.BytesInFlight (), 0, "TxBuf miscalculates initial size of in flight segments");
 
@@ -212,6 +218,7 @@ QuicTxBufferTestCase::TestRetransmission ()
                                           false, true, false);
   p1->AddHeader (sub);
   txBuf.Add (p1);
+  NS_TEST_ASSERT_MSG_EQ(sched->AppSize(), 1200, "Wrong insertion in scheduler");
 
   Ptr<Packet> ptx = txBuf.NextSequence (1200, SequenceNumber32 (1));
   NS_TEST_ASSERT_MSG_EQ(ptx->GetSize (), 1200, "TxBuf miscalculates size");
@@ -314,6 +321,10 @@ QuicTxBufferTestCase::TestRejection ()
 
   QuicSocketTxBuffer socketTxBuf;
   socketTxBuf.SetMaxBufferSize (4800);
+
+  Ptr<QuicSocketTxScheduler> sched;
+  sched = CreateObject<QuicSocketTxFifoScheduler> ();
+  socketTxBuf.SetScheduler(sched);
 
   // Create packet
   Ptr<Packet> p = Create<Packet> (1200);
@@ -481,7 +492,10 @@ QuicTxBufferTestCase::TestNewBlock ()
   // create the buffer
   QuicSocketTxBuffer txBuf;
   Ptr<QuicSocketState> tcbd;
+  Ptr<QuicSocketTxScheduler> sched;
 
+  sched = CreateObject<QuicSocketTxFifoScheduler> ();
+  txBuf.SetScheduler(sched);
   tcbd = CreateObject<QuicSocketState> ();
 
   NS_TEST_ASSERT_MSG_EQ(
@@ -570,7 +584,10 @@ QuicTxBufferTestCase::TestPartialAck ()
   // create the buffer
   QuicSocketTxBuffer txBuf;
   Ptr<QuicSocketState> tcbd;
+  Ptr<QuicSocketTxScheduler> sched;
 
+  sched = CreateObject<QuicSocketTxFifoScheduler> ();
+  txBuf.SetScheduler(sched);
   tcbd = CreateObject<QuicSocketState> ();
 
   // get a packet which is exactly the same stored
@@ -651,7 +668,10 @@ QuicTxBufferTestCase::TestAckLoss ()
   // create the buffer
   QuicSocketTxBuffer txBuf;
   Ptr<QuicSocketState> tcbd;
+  Ptr<QuicSocketTxScheduler> sched;
 
+  sched = CreateObject<QuicSocketTxFifoScheduler> ();
+  txBuf.SetScheduler(sched);
   tcbd = CreateObject<QuicSocketState> ();
 
   // get a packet which is exactly the same stored
@@ -736,7 +756,10 @@ QuicTxBufferTestCase::TestSetLoss ()
   // create the buffer
   QuicSocketTxBuffer txBuf;
   Ptr<QuicSocketState> tcbd;
+  Ptr<QuicSocketTxScheduler> sched;
 
+  sched = CreateObject<QuicSocketTxFifoScheduler> ();
+  txBuf.SetScheduler(sched);
   tcbd = CreateObject<QuicSocketState> ();
 
   // get a packet which is exactly the same stored
@@ -806,6 +829,9 @@ QuicTxBufferTestCase::TestAddBlocks ()
   // create the buffer
   QuicSocketTxBuffer txBuf;
   Ptr<QuicSocketState> tcbd;
+  Ptr<QuicSocketTxScheduler> sched;
+  sched = CreateObject<QuicSocketTxFifoScheduler> ();
+  txBuf.SetScheduler(sched);
 
   // set buffer size
   txBuf.SetMaxBufferSize (6000);
@@ -854,7 +880,10 @@ QuicTxBufferTestCase::TestStream0 ()
   // create the buffer
   QuicSocketTxBuffer txBuf;
   Ptr<QuicSocketState> tcbd;
+  Ptr<QuicSocketTxScheduler> sched;
 
+  sched = CreateObject<QuicSocketTxFifoScheduler> ();
+  txBuf.SetScheduler(sched);
   tcbd = CreateObject<QuicSocketState> ();
 
   // get a packet

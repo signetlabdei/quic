@@ -35,6 +35,7 @@
 #include "ns3/event-id.h"
 #include "quic-socket-rx-buffer.h"
 #include "quic-socket-tx-buffer.h"
+#include "quic-socket-tx-scheduler.h"
 #include "quic-header.h"
 #include "quic-subheader.h"
 #include "quic-transport-parameters.h"
@@ -278,6 +279,11 @@ public:
   void SetQuicL4 (Ptr<QuicL4Protocol> quic);
 
   /**
+   * \brief Initialize socket TX buffer scheduler
+   */
+  void InitializeScheduling ();
+
+  /**
    * \brief Set the connection ID, e.g., for client-initiated connections
    *
    * \param connectionId the connection ID
@@ -311,6 +317,8 @@ public:
    * \return the connection window
    */
   uint32_t ConnectionWindow () const;
+
+
 
   /**
    * \brief Return total bytes in flight
@@ -457,7 +465,7 @@ public:
    * \param newValue new ssTh value
    */
   void UpdateSsThresh (uint32_t oldValue, uint32_t newValue);
-  
+
   /**
    * \brief Callback function to hook to QuicSocketState congestion state
    *
@@ -551,6 +559,37 @@ public:
   virtual enum SocketErrno GetErrno (void) const;
   virtual enum SocketType GetSocketType (void) const;
 
+	/**
+	 * Set the latency bound for a specified stream
+	 *
+	 * \param streamId The stream ID
+	 * \param latency The stream's maximum latency
+	 */
+	void SetLatency(uint32_t streamId, Time latency);
+
+	/**
+	 * Get the latency bound for a specified stream
+	 *
+	 * \param streamId The stream ID
+	 * \return The stream's maximum latency, or 0 if the stream is not registered
+	 */
+	Time GetLatency(uint32_t streamId);
+
+	/**
+	 * Set the default latency bound
+	 *
+	 * \param latency The default maximum latency
+	 */
+	void SetDefaultLatency(Time latency);
+
+	/**
+	 * Get the default latency bound
+	 *
+	 * \param streamId The stream ID
+	 * \return The default maximum latency
+	 */
+	Time GetDefaultLatency();
+
   /**
    * \brief TracedCallback signature for QUIC packet transmission or reception events.
    *
@@ -587,7 +626,7 @@ protected:
   /**
    * \brief Handle retransmission after loss
    */
-  void DoRetransmit (std::vector<QuicSocketTxItem*> lostPackets);
+  void DoRetransmit (std::vector<Ptr<QuicSocketTxItem>> lostPackets);
 
   /**
    * \brief Extract at most maxSize bytes from the TxBuffer at sequence packetNumber, add the
@@ -707,6 +746,8 @@ protected:
   uint32_t m_socketTxBufferSize;                          //!< Size of the socket TX buffer
   uint32_t m_socketRxBufferSize;                          //!< Size of the socket RX buffer
   std::vector<SequenceNumber32> m_receivedPacketNumbers;  //!< Received packet number vector
+  TypeId m_schedulingTypeId;  							  //!< The socket type of the packet scheduler
+  Time m_defaultLatency;								  //!< The default latency bound (only used by the EDF scheduler)
 
   // State-related attributes
   TracedValue<QuicStates_t> m_socketState;  //!< State in the Congestion state machine
@@ -753,6 +794,8 @@ protected:
   bool m_quicCongestionControlLegacy;             //!< Quic Congestion control if true, TCP Congestion control if false
   bool m_queue_ack;                               //!< Indicates a request for a queue ACK if true
   uint32_t m_numPacketsReceivedSinceLastAckSent;  //!< Number of packets received since last ACK sent
+  uint32_t m_lastMaxData;						  //!< Last MaxData ACK
+  uint32_t m_maxDataInterval;					  //!< Interval between successive MaxData frames in ACKs
 
   uint32_t m_initialPacketSize; //!< size of the first packet to be sent durin the handshake (at least 1200 bytes, per RFC)
 
@@ -790,6 +833,7 @@ protected:
 
   TracedCallback<Ptr<const Packet>, const QuicHeader&,
                  Ptr<const QuicSocketBase> > m_rxTrace; //!< Trace of received packets
+
 };
 
 } //namespace ns3

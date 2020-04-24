@@ -93,8 +93,8 @@ public:
 
   virtual void OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, bool isAckOnly);
   virtual void OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
-                      std::vector<QuicSocketTxItem *> newAcks, const struct RateSample *rs);
-  virtual void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem *> lostPackets);
+                      std::vector<Ptr<QuicSocketTxItem>> newAcks, const struct RateSample *rs);
+  virtual void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxItem>> lostPackets);
 
   virtual void CwndEvent (Ptr<TcpSocketState> tcb,
                           const TcpSocketState::TcpCAEvent_t event);
@@ -106,7 +106,7 @@ public:
 
 protected:
 
-  void OnPacketAcked (Ptr<TcpSocketState> tcb, QuicSocketTxItem &ackedPacket);
+  void OnPacketAcked (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPacket);
   virtual void OnRetransmissionTimeoutVerified (Ptr<TcpSocketState> tcb);
 
 
