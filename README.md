@@ -1,12 +1,15 @@
-QUIC implementation for ns-3
+BBR implementation for QUIC in ns-3
 ================================
 
 ## QUIC code base
-This repository contains in the code for a native IETF QUIC implementation in ns-3.
+This repository is a fork of [signetlabdei/quic](https://github.com/signetlabdei/quic) which contains in the code for a native IETF QUIC implementation in ns-3.
 
 The implementation is described in [this paper](https://arxiv.org/abs/1902.06121).
 
-Please use this [issue tracker](https://github.com/signetlabdei/quic-ns-3/issues) for bugs/questions.
+## BBR implementation
+The implementation provided in this repository is an adaptation of the TCP one provided in [Vivek-anand-jain/ns-3-dev-git/bbr-dev](https://github.com/Vivek-anand-jain/ns-3-dev-git/tree/bbr-dev).
+
+Please use this [issue tracker](https://github.com/il-theCrow/quic-ns-3/issues) for bugs/questions.
 
 ## Install
 
@@ -31,7 +34,7 @@ cd ns-3-dev/src
 
 Then, clone the quic module:
 ```bash
-git clone https://github.com/signetlabdei/quic quic
+git clone https://github.com/il-theCrow/quic quic
 ```
 
 Finally, edit the `wscript` file of the internet module and add
