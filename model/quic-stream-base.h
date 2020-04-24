@@ -210,6 +210,8 @@ protected:
 
   // Flow Control Parameters
   uint32_t m_maxStreamData;                          //!< Maximum amount of data that can be sent/received on the stream
+  uint32_t m_maxAdvertisedData;						 //!< Last advertised MaxData
+  uint32_t m_maxDataInterval;						 //!< Interval between MaxData frames
   uint64_t m_sentSize;                               //!< Amount of data sent in this stream
   uint64_t m_recvSize;                               //!< Amount of data received in this stream
   bool m_fin;                                        //!< A flag indicating if the FIN bit has already been received/sent
