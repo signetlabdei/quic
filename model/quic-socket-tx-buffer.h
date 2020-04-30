@@ -50,9 +50,6 @@ struct RateSample {
 	Time m_ackElapsed; //!< ACK time interval calculated from the most recent packet delivered
 	uint32_t m_packetLoss;
 	uint32_t m_priorInFlight;
-	uint32_t m_ackBytesSent { 0 }; //!< amount of ACK-only bytes sent over the sampling interval
-	uint32_t m_priorAckBytesSent { 0 }; //!< amount of ACK-only bytes sent up to a flight ago
-	uint8_t m_ackBytesMaxWin { 0 };
 };
 
 /**
@@ -109,7 +106,6 @@ public:
 	Time m_deliveredTime { Time::Max() }; //!< Connection's delivered time at the time the packet was sent
 	Time m_firstSentTime { Seconds(0) }; //!< Connection's first sent time at the time the packet was sent
 	bool m_isAppLimited { false }; //!< Connection's app limited at the time the packet was sent
-	uint32_t m_ackBytesSent { 0 }; //!< Connection's ACK-only bytes sent at the time the packet was sent
 };
 
 /**
@@ -289,13 +285,6 @@ public:
 	 * \param The size of the sent packet
 	 */
 	void UpdatePacketSent(SequenceNumber32 seq, uint32_t sz);
-
-	/**
-	 * Updates ACK related variables required by RateSample to discount the delivery rate.
-	 * \param The sequence number of the sent ACK packet
-	 * \param The size of the sent ACK packet
-	 */
-	void UpdateAckSent(SequenceNumber32 seq, uint32_t sz);
 
 	/**
 	 * Get the current rate sample

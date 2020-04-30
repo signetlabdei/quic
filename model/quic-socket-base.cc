@@ -1288,8 +1288,6 @@ QuicSocketBase::SendAck ()
   //     NS_FATAL_ERROR("ACK not possible in this state");
   //   }
 
-  m_txBuffer->UpdateAckSent (packetNumber, p->GetSerializedSize () + head.GetSerializedSize ());
-
   NS_LOG_INFO ("Send ACK packet with header " << head);
   m_quicl4->SendPacket (this, p, head);
   m_txTrace (p, head, this);

@@ -121,9 +121,9 @@ public:
   Time                  m_firstSentTime   {Seconds (0)};    //!< The send time of the packet that was most recently marked as delivered
   uint64_t              m_appLimitedUntil {0};              //!< Connection is application-limited until m_appLimitedUntil > m_delivered
   uint32_t              m_txItemDelivered {0};              /**< amount of data (in bytes) delivered when last packet
-                                                                marked asdelivered was first sent */
+                                                                  marked asdelivered was first sent */
   uint32_t              m_lastAckedSackedBytes {0};         //!< Size of data sacked in the last ack
-  uint32_t              m_ackBytesSent    {0};              //!< amount of ACK-only bytes sent
+
 };
 
 /**

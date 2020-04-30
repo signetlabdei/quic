@@ -611,19 +611,8 @@ void QuicSocketTxBuffer::UpdatePacketSent(SequenceNumber32 seq, uint32_t sz) {
 	item->m_deliveredTime = m_tcb->m_deliveredTime;
 	item->m_isAppLimited = (m_tcb->m_appLimitedUntil > m_tcb->m_delivered);
 	item->m_delivered = m_tcb->m_delivered;
-	item->m_ackBytesSent = m_tcb->m_ackBytesSent;
 }
 
-void
-QuicSocketTxBuffer::UpdateAckSent (SequenceNumber32 seq, uint32_t sz)
-{
-  if (m_tcb == nullptr or sz == 0)
-    {
-      return;
-    }
-
-  m_tcb->m_ackBytesSent += sz;
-}
 
 struct RateSample*
 QuicSocketTxBuffer::GetRateSample ()
@@ -654,7 +643,6 @@ QuicSocketTxBuffer::UpdateRateSample (Ptr<QuicSocketTxItem> item)
       m_rs.m_sendElapsed      = item->m_lastSent - item->m_firstSentTime;
       m_rs.m_ackElapsed       = m_tcb->m_deliveredTime - item->m_deliveredTime;
       m_tcb->m_firstSentTime  = item->m_lastSent;
-      m_rs.m_priorAckBytesSent  = item->m_ackBytesSent;
     }
 
   /* Mark the packet as delivered once it is SACKed to avoid
@@ -683,15 +671,6 @@ QuicSocketTxBuffer::GenerateRateSample ()
 
   m_rs.m_delivered = m_tcb->m_delivered - m_rs.m_priorDelivered;
 
-
-  if (m_rs.m_ackBytesSent < m_tcb->m_ackBytesSent - m_rs.m_priorAckBytesSent or ++m_rs.m_ackBytesMaxWin > 5) //quick maxfilter implementation
-    {
-      m_rs.m_ackBytesSent = m_tcb->m_ackBytesSent - m_rs.m_priorAckBytesSent;
-      m_rs.m_ackBytesMaxWin = 0;
-    }
-
-  uint32_t discountedDelivered = m_rs.m_delivered > m_rs.m_ackBytesSent ? m_rs.m_delivered - m_rs.m_ackBytesSent : 0U;
-
   if (m_rs.m_interval < m_tcb->m_minRtt)
     {
       m_rs.m_interval = Seconds (0);
@@ -700,7 +679,7 @@ QuicSocketTxBuffer::GenerateRateSample ()
 
   if (m_rs.m_interval != Seconds (0))
     {
-      m_rs.m_deliveryRate = DataRate (discountedDelivered * 8.0 / m_rs.m_interval.GetSeconds ());
+      m_rs.m_deliveryRate = DataRate (m_rs.m_delivered * 8.0 / m_rs.m_interval.GetSeconds ());
     }
   NS_LOG_DEBUG ("computed delivery rate: " << m_rs.m_deliveryRate);
   return true;
