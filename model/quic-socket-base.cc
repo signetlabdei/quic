@@ -1077,12 +1077,6 @@ QuicSocketBase::SendPendingData (bool withAck)
 
       uint32_t availableData = m_txBuffer->AppSize ();
 
-  	  if(availableData < availableWindow and !m_closeOnEmpty)
-  	  {
-        NS_LOG_INFO("Ask the app for more data before trying to send");
-  		  NotifySend(GetTxAvailable());
-  	  }
-
       if (availableWindow < GetSegSize () and availableData > availableWindow and !m_closeOnEmpty)
         {
           NS_LOG_INFO ("Preventing Silly Window Syndrome. Wait to Send.");
@@ -1418,6 +1412,12 @@ QuicSocketBase::SendDataPacket (SequenceNumber32 packetNumber,
   if (!isAckOnly)
     {
       SetReTxTimeout ();
+    }
+
+  // notify the application that more data can be sent
+  if (GetTxAvailable () > 0)
+    {
+      NotifySend (GetTxAvailable ());
     }
 
   return sz;
