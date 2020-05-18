@@ -1498,23 +1498,10 @@ QuicSocketBase::DoRetransmit (std::vector<Ptr<QuicSocketTxItem>> lostPackets)
 {
   NS_LOG_FUNCTION (this);
   // Get packets to retransmit
-  SequenceNumber32 next = ++m_tcb->m_nextTxSequence;
+  SequenceNumber32 next = m_tcb->m_nextTxSequence + 1;
   uint32_t toRetx = m_txBuffer->Retransmission (next);
   NS_LOG_INFO(toRetx << " bytes to retransmit");
-  NS_LOG_DEBUG ("Send the retransmitted frame");
-  uint32_t win = AvailableWindow ();
-  uint32_t connWin = ConnectionWindow ();
-  uint32_t bytesInFlight = BytesInFlight ();
-  NS_LOG_DEBUG (
-    "BEFORE Available Window " << win
-                               << " Connection RWnd " << connWin
-                               << " BytesInFlight " << bytesInFlight
-                               << " BufferedSize " << m_txBuffer->AppSize ()
-                               << " MaxPacketSize " << GetSegSize ());
-
-  // Send the retransmitted data
-  NS_LOG_INFO ("Retransmitted packet, next sequence number " << m_tcb->m_nextTxSequence);
-  SendDataPacket (next, toRetx, m_connected);
+  SendPendingData (m_connected);
 }
 
 void
