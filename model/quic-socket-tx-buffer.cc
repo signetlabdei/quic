@@ -449,11 +449,13 @@ bool QuicSocketTxBuffer::MarkAsLost(const SequenceNumber32 seq) {
 	return found;
 }
 
-uint32_t QuicSocketTxBuffer::Retransmission(SequenceNumber32 packetNumber) {
-	NS_LOG_FUNCTION(this);
+uint32_t
+QuicSocketTxBuffer::Retransmission (SequenceNumber32 packetNumber)
+{
+	NS_LOG_FUNCTION (this);
 	uint32_t toRetx = 0;
 	// First pass: add lost packets to the application buffer
-	for (auto sent_it = m_sentList.rbegin(); sent_it != m_sentList.rend();
+	for (auto sent_it = m_sentList.begin (); sent_it != m_sentList.end ();
 			++sent_it) {
 		Ptr<QuicSocketTxItem> item = *sent_it;
 		if (item->m_lost) {
@@ -463,26 +465,30 @@ uint32_t QuicSocketTxBuffer::Retransmission(SequenceNumber32 packetNumber) {
 			retx->m_isStream = item->m_isStream;
 			retx->m_isStream0 = item->m_isStream0;
 			retx->m_packet = Create<Packet>();
-			NS_LOG_INFO(
-					"Retx packet " << item->m_packetNumber << " as "<< retx->m_packetNumber.GetValue ());
+			NS_LOG_INFO (
+					"Retx packet " << item->m_packetNumber << " as "
+					<< retx->m_packetNumber.GetValue ());
 			QuicSocketTxItem::MergeItems(*retx, *item);
 			retx->m_lost = false;
 			retx->m_retrans = true;
 			toRetx += retx->m_packet->GetSize();
 			m_sentSize -= retx->m_packet->GetSize();
-			if (retx->m_isStream0) {
-				NS_LOG_INFO("Lost stream 0 packet, re-inserting in list");
-				m_streamZeroList.insert(m_streamZeroList.begin(), retx);
-				m_streamZeroSize += retx->m_packet->GetSize();
-				m_numFrameStream0InBuffer++;
-			} else {
-				m_scheduler->Add(retx, true);
-			}
+			if (retx->m_isStream0)
+				{
+					NS_LOG_INFO("Lost stream 0 packet, re-inserting in list");
+					m_streamZeroList.insert(m_streamZeroList.begin(), retx);
+					m_streamZeroSize += retx->m_packet->GetSize();
+					m_numFrameStream0InBuffer++;
+				}
+			else 
+				{
+					m_scheduler->Add(retx, true);
+				}
 		}
 	}
 
-	NS_LOG_LOGIC("Remove retransmitted packets from sent list");
-	auto sent_it = m_sentList.begin();
+	NS_LOG_LOGIC ("Remove retransmitted packets from sent list");
+	auto sent_it = m_sentList.begin ();
 	// Remove lost packets from the sent list
 	while (!m_sentList.empty() && sent_it != m_sentList.end()) {
 		Ptr<QuicSocketTxItem> item = *sent_it;

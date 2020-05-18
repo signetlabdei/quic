@@ -121,17 +121,24 @@ QuicSocketTxFifoScheduler::Add (Ptr<QuicSocketTxItem> item, bool retx)
 
   QuicSubheader qsb;
   item->m_packet->PeekHeader (qsb);
-  NS_LOG_INFO("Adding packet on stream "<<qsb.GetStreamId());
+  NS_LOG_INFO("Adding packet on stream " << qsb.GetStreamId ());
   if (!retx)
-  {
-	NS_LOG_INFO("Standard item, add at end (offset "<<qsb.GetOffset()<< ")");
-	m_appList.insert (m_appList.end (), item);
-  }
+    {
+      NS_LOG_INFO("Standard item, add at end (offset " << qsb.GetOffset ()<< ")");
+      m_appList.insert (m_appList.end (), item);
+    }
   else
-  {
-	NS_LOG_INFO("Retransmitted item, add at beginning (offset "<<qsb.GetOffset() << ")");
-	m_appList.insert (m_appList.begin (), item);
-  }
+    {
+      NS_LOG_INFO("Retransmitted item, add after other retransmissions (offset "
+                  << qsb.GetOffset () << ")");
+      //TODO maybe order by qsb->GetOffset()?
+      auto it = m_appList.begin ();
+      while (it != m_appList.end () and (*it)->m_retrans)
+        {
+          ++it;
+        }
+      m_appList.insert (it, item);
+    }
   m_appSize += item->m_packet->GetSize ();
 }
 
