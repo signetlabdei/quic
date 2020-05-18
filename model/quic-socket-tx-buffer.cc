@@ -365,7 +365,7 @@ std::vector<Ptr<QuicSocketTxItem>> QuicSocketTxBuffer::OnAckUpdate(
 				(*sent_it)->m_sacked = true;
 				(*sent_it)->m_ackTime = Now();
 				newlyAcked.push_back((*sent_it));
-				UpdateRateSample((*sent_it));
+				UpdateRateSample ((*sent_it), tcbd);
 			}
 
 		}
@@ -577,26 +577,24 @@ uint32_t QuicSocketTxBuffer::BytesInFlight() const {
 
 }
 
-void QuicSocketTxBuffer::SetQuicSocketState(Ptr<QuicSocketState> tcb) {
-	NS_LOG_FUNCTION(this);
-	m_tcb = tcb;
-}
-
 void QuicSocketTxBuffer::SetScheduler(Ptr<QuicSocketTxScheduler> sched) {
 	NS_LOG_FUNCTION(this);
 	m_scheduler = sched;
 }
 
-void QuicSocketTxBuffer::UpdatePacketSent(SequenceNumber32 seq, uint32_t sz) {
+void
+QuicSocketTxBuffer::UpdatePacketSent (SequenceNumber32 seq, uint32_t sz,
+		Ptr<QuicSocketState> tcb)
+{
 	NS_LOG_FUNCTION(this << seq << sz);
 
-	if (m_tcb == nullptr or sz == 0) {
+	if (tcb == nullptr or sz == 0) {
 		return;
 	}
 
-	if (m_tcb->m_bytesInFlight.Get() == 0) {
-		m_tcb->m_firstSentTime = Simulator::Now();
-		m_tcb->m_deliveredTime = Simulator::Now();
+	if (tcb->m_bytesInFlight.Get() == 0) {
+		tcb->m_firstSentTime = Simulator::Now();
+		tcb->m_deliveredTime = Simulator::Now();
 	}
 
 	Ptr<QuicSocketTxItem> item = nullptr;
@@ -607,10 +605,10 @@ void QuicSocketTxBuffer::UpdatePacketSent(SequenceNumber32 seq, uint32_t sz) {
 		}
 	}
 	NS_ASSERT_MSG(item != nullptr, "not found seq " << seq);
-	item->m_firstSentTime = m_tcb->m_firstSentTime;
-	item->m_deliveredTime = m_tcb->m_deliveredTime;
-	item->m_isAppLimited = (m_tcb->m_appLimitedUntil > m_tcb->m_delivered);
-	item->m_delivered = m_tcb->m_delivered;
+	item->m_firstSentTime = tcb->m_firstSentTime;
+	item->m_deliveredTime = tcb->m_deliveredTime;
+	item->m_isAppLimited = (tcb->m_appLimitedUntil > tcb->m_delivered);
+	item->m_delivered = tcb->m_delivered;
 }
 
 
@@ -622,18 +620,18 @@ QuicSocketTxBuffer::GetRateSample ()
 }
 
 void
-QuicSocketTxBuffer::UpdateRateSample (Ptr<QuicSocketTxItem> item)
+QuicSocketTxBuffer::UpdateRateSample (Ptr<QuicSocketTxItem> item, Ptr<QuicSocketState> tcb)
 {
   NS_LOG_FUNCTION (this << item);
 
-  if (m_tcb == nullptr or item->m_deliveredTime == Time::Max ())
+  if (tcb == nullptr or item->m_deliveredTime == Time::Max () or item->m_isStream0)
     {
       // item already SACKed
       return;
     }
 
-  m_tcb->m_delivered         += item->m_packet->GetSize ();;
-  m_tcb->m_deliveredTime      = Simulator::Now ();
+  tcb->m_delivered         += item->m_packet->GetSize ();;
+  tcb->m_deliveredTime      = Simulator::Now ();
 
   if (item->m_delivered > m_rs.m_priorDelivered)
     {
@@ -641,23 +639,23 @@ QuicSocketTxBuffer::UpdateRateSample (Ptr<QuicSocketTxItem> item)
       m_rs.m_priorTime        = item->m_deliveredTime;
       m_rs.m_isAppLimited     = item->m_isAppLimited;
       m_rs.m_sendElapsed      = item->m_lastSent - item->m_firstSentTime;
-      m_rs.m_ackElapsed       = m_tcb->m_deliveredTime - item->m_deliveredTime;
-      m_tcb->m_firstSentTime  = item->m_lastSent;
+      m_rs.m_ackElapsed       = tcb->m_deliveredTime - item->m_deliveredTime;
+      tcb->m_firstSentTime  = item->m_lastSent;
     }
 
   /* Mark the packet as delivered once it is SACKed to avoid
    * being used again when it's cumulatively acked.
    */
   item->m_deliveredTime = Time::Max ();
-  m_tcb->m_txItemDelivered = item->m_delivered;
+  tcb->m_txItemDelivered = item->m_delivered;
 }
 
 bool
-QuicSocketTxBuffer::GenerateRateSample ()
+QuicSocketTxBuffer::GenerateRateSample (Ptr<QuicSocketState> tcb)
 {
   NS_LOG_FUNCTION (this);
 
-  if (m_tcb == nullptr)
+  if (tcb == nullptr)
     {
       return false;
     }
@@ -669,9 +667,9 @@ QuicSocketTxBuffer::GenerateRateSample ()
 
   m_rs.m_interval = std::max (m_rs.m_sendElapsed, m_rs.m_ackElapsed);
 
-  m_rs.m_delivered = m_tcb->m_delivered - m_rs.m_priorDelivered;
+  m_rs.m_delivered = tcb->m_delivered - m_rs.m_priorDelivered;
 
-  if (m_rs.m_interval < m_tcb->m_minRtt)
+  if (m_rs.m_interval < tcb->m_minRtt)
     {
       m_rs.m_interval = Seconds (0);
       return false;

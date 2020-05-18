@@ -268,12 +268,6 @@ public:
 	uint32_t Retransmission(SequenceNumber32 packetNumber);
 
 	/**
-	 * Set the TcpSocketState (tcb)
-	 * \param The TcpSocketState object
-	 */
-	void SetQuicSocketState(Ptr<QuicSocketState> tcb);
-
-	/**
 	 * Set the socket scheduler
 	 * \param The scheduler object
 	 */
@@ -281,10 +275,11 @@ public:
 
 	/**
 	 * Updates per packet variables required for rate sampling on each packet transmission
-	 * \param The sequence number of the sent packet
-	 * \param The size of the sent packet
+	 * \param seq The sequence number of the sent packet
+	 * \param sz The size of the sent packet
+	 * \param tcb The socket state
 	 */
-	void UpdatePacketSent(SequenceNumber32 seq, uint32_t sz);
+	void UpdatePacketSent(SequenceNumber32 seq, uint32_t sz, Ptr<QuicSocketState> tcb);
 
 	/**
 	 * Get the current rate sample
@@ -294,15 +289,17 @@ public:
 
 	/**
 	 * Updates rate samples rate on arrival of each acknowledgement.
-	 * \param The QuicSocketTxItem containing the acknowledgment
+	 * \param item The QuicSocketTxItem containing the acknowledgment
+	 * \param tcb The socket state
 	 */
-	void UpdateRateSample(Ptr<QuicSocketTxItem> pps);
+	void UpdateRateSample(Ptr<QuicSocketTxItem> item, Ptr<QuicSocketState> tcb);
 
 	/**
 	 * Calculates delivery rate on arrival of each acknowledgement.
+	 * \param tcb The socket state
 	 * \return True if the calculation is performed correctly
 	 */
-	bool GenerateRateSample();
+	bool GenerateRateSample(Ptr<QuicSocketState> tcb);
 
 	/**
 	 * Set the latency bound for a specified stream
@@ -353,7 +350,6 @@ private:
 	uint32_t m_numFrameStream0InBuffer;  //!< Number of Stream 0 frames buffered
 
 	Ptr<QuicSocketTxScheduler> m_scheduler { nullptr };   //!< Scheduler
-	Ptr<QuicSocketState> m_tcb { nullptr };
 	struct RateSample m_rs;
 };
 

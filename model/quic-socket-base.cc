@@ -517,7 +517,6 @@ QuicSocketBase::QuicSocketBase (void)
   m_tcb->m_cWnd = m_tcb->m_initialCWnd;
   m_tcb->m_ssThresh = m_tcb->m_initialSsThresh;
   m_quicCongestionControlLegacy = false;
-  m_txBuffer->SetQuicSocketState(m_tcb);
 
   m_tcb->m_currentPacingRate = m_tcb->m_maxPacingRate;
   m_pacingTimer.SetFunction (&QuicSocketBase::NotifyPacingPerformed, this);
@@ -621,7 +620,6 @@ QuicSocketBase::QuicSocketBase (const QuicSocketBase& sock)   // Copy constructo
       m_congestionControl = sock.m_congestionControl->Fork ();
     }
   m_quicCongestionControlLegacy = sock.m_quicCongestionControlLegacy;
-  m_txBuffer->SetQuicSocketState(m_tcb);
 
   m_tcb->m_currentPacingRate = m_tcb->m_maxPacingRate;
   m_pacingTimer.SetFunction (&QuicSocketBase::NotifyPacingPerformed, this);
@@ -1410,7 +1408,7 @@ QuicSocketBase::SendDataPacket (SequenceNumber32 packetNumber,
   m_txTrace (p, head, this);
   NotifyDataSent (sz);
 
-  m_txBuffer->UpdatePacketSent(packetNumber, sz);
+  m_txBuffer->UpdatePacketSent(packetNumber, sz, m_tcb);
 
   if (!m_quicCongestionControlLegacy)
     {
@@ -2297,7 +2295,7 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
   // Count newly acked bytes
   uint32_t ackedBytes = previousWindow - m_txBuffer->BytesInFlight ();
 
-  m_txBuffer->GenerateRateSample ();
+  m_txBuffer->GenerateRateSample (m_tcb);
   rs->m_packetLoss = std::abs ((int) lostOut - (int) m_txBuffer->GetLost ());
   m_tcb->m_lastAckedSackedBytes = m_tcb->m_delivered - delivered;
 
