@@ -41,16 +41,16 @@ class QuicSocketState;
 class QuicSocketTxScheduler;
 
 struct RateSample {
-	DataRate m_deliveryRate;   //!< The delivery rate sample
-	bool m_isAppLimited { false }; //!< Indicates whether the rate sample is application-limited
-	Time m_interval;       //!< The length of the sampling interval
-	uint32_t m_delivered { 0 }; //!< The amount of data marked as delivered over the sampling interval
-	uint32_t m_priorDelivered { 0 }; //!< The delivered count of the most recent packet delivered
-	Time m_priorTime; //!< The delivered time of the most recent packet delivered
-	Time m_sendElapsed; //!< Send time interval calculated from the most recent packet delivered
-	Time m_ackElapsed; //!< ACK time interval calculated from the most recent packet delivered
-	uint32_t m_packetLoss;
-	uint32_t m_priorInFlight;
+	DataRate m_deliveryRate   {DataRate (0)};   //!< The delivery rate sample
+	bool m_isAppLimited       {false};          //!< Indicates whether the rate sample is application-limited
+	Time m_interval           {Seconds (0)};    //!< The length of the sampling interval
+	uint32_t m_delivered      {0};              //!< The amount of data marked as delivered over the sampling interval
+	uint32_t m_priorDelivered {0};              //!< The delivered count of the most recent packet delivered
+	Time m_priorTime          {Seconds (0)};    //!< The delivered time of the most recent packet delivered
+	Time m_sendElapsed        {Seconds (0)};    //!< Send time interval calculated from the most recent packet delivered
+	Time m_ackElapsed         {Seconds (0)};    //!< ACK time interval calculated from the most recent packet delivered
+	uint32_t m_packetLoss     {0};
+	uint32_t m_priorInFlight  {0};
 };
 
 /**
@@ -103,10 +103,10 @@ public:
 	Time m_ackTime; //!< time at which the packet was first acked (if m_sacked is true)
 	Time m_generated; //!< expiration deadline for the TX item
 
-	uint64_t m_delivered { 0 }; //!< Connection's delivered data at the time the packet was sent
-	Time m_deliveredTime { Time::Max() }; //!< Connection's delivered time at the time the packet was sent
-	Time m_firstSentTime { Seconds(0) }; //!< Connection's first sent time at the time the packet was sent
-	bool m_isAppLimited { false }; //!< Connection's app limited at the time the packet was sent
+	uint64_t m_delivered    {0};            //!< Connection's delivered data at the time the packet was sent
+	Time m_deliveredTime    {Time::Max ()}; //!< Connection's delivered time at the time the packet was sent
+	Time m_firstSentTime    {Seconds (0)};  //!< Connection's first sent time at the time the packet was sent
+	bool m_isAppLimited     {false};        //!< Connection's app limited at the time the packet was sent
 };
 
 /**
@@ -351,7 +351,7 @@ private:
 	uint32_t m_numFrameStream0InBuffer;  //!< Number of Stream 0 frames buffered
 
 	Ptr<QuicSocketTxScheduler> m_scheduler { nullptr };   //!< Scheduler
-	struct RateSample m_rs;
+	struct RateSample m_rs;                               //<! The Connection Rate Sample
 };
 
 } // namepsace ns3

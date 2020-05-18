@@ -233,12 +233,16 @@ QuicSocketBase::GetTypeId (void)
                    TimeValue (MilliSeconds (100)),
                    MakeTimeAccessor (&QuicSocketBase::m_defaultLatency),
                    MakeTimeChecker ())
-    .AddAttribute (
-                   "LegacyCongestionControl",
+    .AddAttribute ("LegacyCongestionControl",
                    "When true, use TCP implementations for the congestion control",
                    BooleanValue (false),
                    MakeBooleanAccessor (&QuicSocketBase::m_quicCongestionControlLegacy),
                    MakeBooleanChecker ())
+    .AddAttribute ("CongControl",
+                   "The Object managing CC operations",
+                   PointerValue (),
+                   MakePointerAccessor (&QuicSocketBase::m_congestionControl),
+                   MakePointerChecker<QuicCongestionOps> ())
     // .AddTraceSource ("RTO", "Retransmission timeout",
     //                  MakeTraceSourceAccessor (&QuicSocketBase::m_rto),
     //                  "ns3::Time::TracedValueCallback").AddTraceSource (
@@ -308,16 +312,6 @@ QuicSocketBase::GetTypeId (void)
                      "Receive QUIC packet from UDP protocol",
                      MakeTraceSourceAccessor (&QuicSocketBase::m_rxTrace),
                      "ns3::QuicSocketBase::QuicTxRxTracedCallback")
-	.AddAttribute ("CongControl",
-				   "The Object managing CC operations",
-				   PointerValue (),
-				   MakePointerAccessor (&QuicSocketBase::m_congestionControl),
-				   MakePointerChecker<QuicCongestionOps> ())
-	.AddAttribute ("TCB",
-				   "The connection's QuicSocketState",
-				   PointerValue (),
-				   MakePointerAccessor (&QuicSocketBase::m_tcb),
-				   MakePointerChecker<QuicSocketState> ())
   ;
   return tid;
 }
