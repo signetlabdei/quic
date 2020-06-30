@@ -145,7 +145,7 @@ QuicBbr::InitPacingRate (Ptr<QuicSocketState> tcb)
       tcb->m_pacing = true;
     }
   Time rtt = tcb->m_lastRtt != Time::Max () ? tcb->m_lastRtt.Get () : MilliSeconds (1);
-  if (rtt == 0)
+  if (rtt.GetSeconds () == 0)
     {
       NS_LOG_INFO("No rtt estimate is available, using kDefaultInitialRtt=" << tcb->m_kDefaultInitialRtt);
       rtt = tcb->m_kDefaultInitialRtt;
