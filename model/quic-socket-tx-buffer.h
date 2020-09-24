@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2019 SIGNET Lab, Department of Information Engineering, University of Padova
+ * Copyright (c) 2020 SIGNET Lab, Department of Information Engineering, University of Padova
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *          Umberto Paro <umberto.paro@me.com>
  */
 
 #ifndef QUICSOCKETTXBUFFER_H
@@ -37,22 +37,23 @@
 namespace ns3 {
 
 class QuicSocketState;
+class QuicSocketTxScheduler;
 
 struct RateSample
 {
-  DataRate      m_deliveryRate;   //!< The delivery rate sample
-  bool          m_isAppLimited {false};   //!< Indicates whether the rate sample is application-limited
-  Time          m_interval;       //!< The length of the sampling interval
-  uint32_t      m_delivered {0};      //!< The amount of data marked as delivered over the sampling interval
-  uint32_t      m_priorDelivered {0}; //!< The delivered count of the most recent packet delivered
-  Time          m_priorTime;      //!< The delivered time of the most recent packet delivered
-  Time          m_sendElapsed;    //!< Send time interval calculated from the most recent packet delivered
-  Time          m_ackElapsed;     //!< ACK time interval calculated from the most recent packet delivered
-  uint32_t      m_packetLoss;
-  uint32_t      m_priorInFlight;
-  uint32_t      m_ackBytesSent {0};   //!< amount of ACK-only bytes sent over the sampling interval
-  uint32_t      m_priorAckBytesSent {0}; //!< amount of ACK-only bytes sent up to a flight ago
-  uint8_t       m_ackBytesSentWin {0};
+  DataRate m_deliveryRate;         //!< The delivery rate sample
+  bool m_isAppLimited { false };       //!< Indicates whether the rate sample is application-limited
+  Time m_interval;             //!< The length of the sampling interval
+  uint32_t m_delivered { 0 };       //!< The amount of data marked as delivered over the sampling interval
+  uint32_t m_priorDelivered { 0 };       //!< The delivered count of the most recent packet delivered
+  Time m_priorTime;       //!< The delivered time of the most recent packet delivered
+  Time m_sendElapsed;       //!< Send time interval calculated from the most recent packet delivered
+  Time m_ackElapsed;       //!< ACK time interval calculated from the most recent packet delivered
+  uint32_t m_packetLoss;
+  uint32_t m_priorInFlight;
+  uint32_t m_ackBytesSent { 0 };       //!< amount of ACK-only bytes sent over the sampling interval
+  uint32_t m_priorAckBytesSent { 0 };       //!< amount of ACK-only bytes sent up to a flight ago
+  uint8_t m_ackBytesMaxWin { 0 };
 };
 
 /**
@@ -60,11 +61,33 @@ struct RateSample
  *
  * \brief Item that encloses the application packet and some flags for it
  */
-class QuicSocketTxItem
+class QuicSocketTxItem : public Object
 {
 public:
+  /**
+   * \brief Get the type ID.
+   * \return the object TypeId
+   */
+  static TypeId GetTypeId (void);
+
   QuicSocketTxItem ();
   QuicSocketTxItem (const QuicSocketTxItem &other);
+
+  /**
+   * \brief Merge two QuicSocketTxItem
+   *
+   * Merge t2 in t1. It consists in copying the lastSent field if t2 is more
+   * recent than t1. Retransmitted field is copied only if it set in t2 but not
+   * in t1. Sacked is copied only if it is true in both items.
+   *
+   * \param t1 first item
+   * \param t2 second item
+   */
+  static void MergeItems (QuicSocketTxItem &t1, QuicSocketTxItem &t2);
+
+  // Available only for streams
+  static void SplitItems (QuicSocketTxItem &t1, QuicSocketTxItem &t2,
+                          uint32_t size);
 
   /**
    * \brief Print the Item
@@ -72,22 +95,23 @@ public:
    */
   void Print (std::ostream &os) const;
 
-  Ptr<Packet> m_packet;             //!< packet associated to this QuicSocketTxItem
-  SequenceNumber32 m_packetNumber;  //!< sequence number
-  bool m_lost;                      //!< true if the packet is lost
-  bool m_retrans;                   //!< true if it is a retx
-  bool m_sacked;                    //!< true if already acknowledged
-  bool m_acked;                     //!< true if already passed to the application
-  bool m_isStream;                  //!< true for frames of a stream (not control)
-  bool m_isStream0;                 //!< true for a frame from stream 0
-  Time m_lastSent;                  //!< time at which it was sent
-  Time m_ackTime;                   //!< time at which the packet was first acked (if m_sacked is true)
+  Ptr<Packet> m_packet;              //!< packet associated to this QuicSocketTxItem
+  SequenceNumber32 m_packetNumber;        //!< sequence number
+  bool m_lost;                            //!< true if the packet is lost
+  bool m_retrans;                         //!< true if it is a retx
+  bool m_sacked;                          //!< true if already acknowledged
+  bool m_acked;                       //!< true if already passed to the application
+  bool m_isStream;                    //!< true for frames of a stream (not control)
+  bool m_isStream0;                       //!< true for a frame from stream 0
+  Time m_lastSent;                        //!< time at which it was sent
+  Time m_ackTime;       //!< time at which the packet was first acked (if m_sacked is true)
+  Time m_generated;       //!< expiration deadline for the TX item
 
-  uint64_t m_delivered {0};          //!< Connection's delivered data at the time the packet was sent
-  Time m_deliveredTime {Time::Max ()};//!< Connection's delivered time at the time the packet was sent
-  Time m_firstSentTime {Seconds (0)};//!< Connection's first sent time at the time the packet was sent
-  bool m_isAppLimited  {false};      //!< Connection's app limited at the time the packet was sent
-  uint32_t m_ackBytesSent {0};       //!< Connection's ACK-only bytes sent at the time the packet was sent
+  uint64_t m_delivered { 0 };       //!< Connection's delivered data at the time the packet was sent
+  Time m_deliveredTime { Time::Max () };      //!< Connection's delivered time at the time the packet was sent
+  Time m_firstSentTime { Seconds (0) };      //!< Connection's first sent time at the time the packet was sent
+  bool m_isAppLimited { false };       //!< Connection's app limited at the time the packet was sent
+  uint32_t m_ackBytesSent { 0 };       //!< Connection's ACK-only bytes sent at the time the packet was sent
 };
 
 /**
@@ -113,7 +137,7 @@ public:
    *
    * \param os the std::ostream object
    */
-  void Print (std::ostream & os) const;
+  void Print (std::ostream &os) const;
   //friend std::ostream & operator<< (std::ostream & os, QuicSocketTxBuffer const & quicTxBuf);
 
   /**
@@ -139,7 +163,7 @@ public:
    * \param numBytes number of bytes of the QuicSocketTxItem requested
    * \return the item that contains the right packet
    */
-  QuicSocketTxItem* GetNewSegment (uint32_t numBytes);
+  Ptr<QuicSocketTxItem> GetNewSegment (uint32_t numBytes);
 
   /**
    * Process an acknowledgment, set the packets in the send buffer as acknowledged, mark
@@ -154,7 +178,10 @@ public:
    * \param gaps The gaps in the acknowledgment
    * \return a vector containing the newly acked packets for congestion control purposes
    */
-  std::vector<QuicSocketTxItem*> OnAckUpdate (Ptr<TcpSocketState> tcb, const uint32_t largestAcknowledged, const std::vector<uint32_t> &additionalAckBlocks, const std::vector<uint32_t> &gaps);
+  std::vector<Ptr<QuicSocketTxItem> > OnAckUpdate (Ptr<TcpSocketState> tcb,
+                                                   const uint32_t largestAcknowledged,
+                                                   const std::vector<uint32_t> &additionalAckBlocks,
+                                                   const std::vector<uint32_t> &gaps);
 
   /**
    * Get the max size of the buffer
@@ -175,11 +202,11 @@ public:
    *
    * \return a vector containing the packets marked as lost
    */
-  std::vector<QuicSocketTxItem*> DetectLostPackets ();
+  std::vector<Ptr<QuicSocketTxItem> > DetectLostPackets ();
 
   /**
    * \brief Count the amount of lost bytes
-   * 
+   *
    * \return the number of bytes considered lost
    */
   uint32_t GetLost ();
@@ -248,70 +275,101 @@ public:
   uint32_t Retransmission (SequenceNumber32 packetNumber);
 
   /**
-   * \brief Set the TcpSocketState (tcb)
+   * Set the TcpSocketState (tcb)
+   * \param The TcpSocketState object
    */
   void SetQuicSocketState (Ptr<QuicSocketState> tcb);
 
   /**
-   * \brief Updates per packet variables required for rate sampling on each
-   * packet transmission
+   * Set the socket scheduler
+   * \param The scheduler object
+   */
+  void SetScheduler (Ptr<QuicSocketTxScheduler> sched);
+
+  /**
+   * Updates per packet variables required for rate sampling on each packet transmission
+   * \param The sequence number of the sent packet
+   * \param The size of the sent packet
    */
   void UpdatePacketSent (SequenceNumber32 seq, uint32_t sz);
 
   /**
-   * \brief Updates ACK related variables required by RateSample to discount the delivery rate.
+   * Updates ACK related variables required by RateSample to discount the delivery rate.
+   * \param The sequence number of the sent ACK packet
+   * \param The size of the sent ACK packet
    */
-  void UpdateAckSent(SequenceNumber32 seq, uint32_t sz);
+  void UpdateAckSent (SequenceNumber32 seq, uint32_t sz);
 
   /**
-   * \brief Returns ptr to the rate sample
+   * Get the current rate sample
+   * \return A pointer to the current rate sample
    */
   struct RateSample* GetRateSample ();
 
   /**
-   * \brief Updates rate samples rate on arrival of each acknowledgement.
+   * Updates rate samples rate on arrival of each acknowledgement.
+   * \param The QuicSocketTxItem containing the acknowledgment
    */
-  void UpdateRateSample (QuicSocketTxItem *pps);
+  void UpdateRateSample (Ptr<QuicSocketTxItem> pps);
 
   /**
-   * \brief Calculates delivery rate on arrival of each acknowledgement.
+   * Calculates delivery rate on arrival of each acknowledgement.
+   * \return True if the calculation is performed correctly
    */
   bool GenerateRateSample ();
 
-private:
-  typedef std::list<QuicSocketTxItem*> QuicTxPacketList;  //!< container for data stored in the buffer
+  /**
+   * Set the latency bound for a specified stream
+   *
+   * \param streamId The stream ID
+   * \param latency The stream's maximum latency
+   */
+  void SetLatency (uint32_t streamId, Time latency);
 
   /**
-   * \brief Discard acknowledged data from the sent list
+   * Get the latency bound for a specified stream
+   *
+   * \param streamId The stream ID
+   * \return The stream's maximum latency, or 0 if the stream is not registered
+   */
+  Time GetLatency (uint32_t streamId);
+
+  /**
+   * Set the default latency bound
+   *
+   * \param latency The default maximum latency
+   */
+  void SetDefaultLatency (Time latency);
+
+  /**
+   * Get the default latency bound
+   *
+   * \param streamId The stream ID
+   * \return The default maximum latency
+   */
+  Time GetDefaultLatency ();
+
+private:
+  typedef std::list<Ptr<QuicSocketTxItem> > QuicTxPacketList;      //!< container for data stored in the buffer
+
+  /**
+   * Discard acknowledged data from the sent list
    */
   void CleanSentList ();
 
-  /**
-   * \brief Merge two QuicSocketTxItem
-   *
-   * Merge t2 in t1. It consists in copying the lastSent field if t2 is more
-   * recent than t1. Retransmitted field is copied only if it set in t2 but not
-   * in t1. Sacked is copied only if it is true in both items.
-   *
-   * \param t1 first item
-   * \param t2 second item
-   */
-  void MergeItems (QuicSocketTxItem &t1, QuicSocketTxItem &t2) const;
 
-  // Available only for streams
-  void SplitItems (QuicSocketTxItem &t1, QuicSocketTxItem &t2, uint32_t size) const;
 
-  QuicTxPacketList m_appList;          //!< List of buffered application packets to be transmitted with additional info
-  QuicTxPacketList m_sentList;         //!< List of sent packets with additional info
-  uint32_t m_maxBuffer;                //!< Max number of data bytes in buffer (SND.WND)
-  uint32_t m_appSize;                  //!< Size of all data in the application list
-  uint32_t m_sentSize;                 //!< Size of all data in the sent list
-  uint32_t m_numFrameStream0InBuffer;  //!< Number of Stream 0 frames buffered
+  QuicTxPacketList m_sentList;        //!< List of sent packets with additional info
+  QuicTxPacketList m_streamZeroList;       //!< List of waiting stream 0 packets with additional info
+  uint32_t m_maxBuffer;            //!< Max number of data bytes in buffer (SND.WND)
+  uint32_t m_streamZeroSize;       //!< Size of all stream 0 data in the application list
+  uint32_t m_sentSize;                       //!< Size of all data in the sent list
+  uint32_t m_numFrameStream0InBuffer;        //!< Number of Stream 0 frames buffered
 
-  Ptr<QuicSocketState> m_tcb {nullptr};
-  struct RateSample   m_rs;
+  Ptr<QuicSocketTxScheduler> m_scheduler { nullptr };         //!< Scheduler
+  Ptr<QuicSocketState> m_tcb { nullptr };
+  struct RateSample m_rs;
 };
-
 
 } // namepsace ns3
 

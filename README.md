@@ -1,12 +1,18 @@
-QUIC implementation for ns-3
+QUIC implementation for QUIC in ns-3
 ================================
 
 ## QUIC code base
-This repository contains in the code for a native IETF QUIC implementation in ns-3.
+
+This repository is a fork of [signetlabdei/quic](https://github.com/signetlabdei/quic) which contains in the code for a native IETF QUIC implementation in ns-3.
 
 The implementation is described in [this paper](https://arxiv.org/abs/1902.06121).
 
-Please use this [issue tracker](https://github.com/signetlabdei/quic-ns-3/issues) for bugs/questions.
+Please use this [issue tracker](https://github.com/signetlabdei/quic/issues) for bugs/questions.
+
+
+## BBR implementation
+
+The implementation provided in this repository is an adaptation of the TCP one provided in [Vivek-anand-jain/ns-3-dev-git/bbr-dev](https://github.com/Vivek-anand-jain/ns-3-dev-git/tree/bbr-dev).
 
 ## Install
 
@@ -18,16 +24,12 @@ Required dependencies include git and a build environment.
 
 #### Installing dependencies ####
 
-Please refer to [the ns-3 wiki](https://www.nsnam.org/wiki/Installation) for instructions on how to set up your system to install ns-3.
+Please refer to [the ns-3 wiki](https://www.nsnam.org/wiki/Installation) for instructions on how to set up your system to install ns-3. 
+This module was implemented and tested on ns-3.29, and forward compatibility is not guaranteed.
 
 #### Downloading #####
 
-First, clone the main ns-3 repository:
-
-```bash
-git clone https://gitlab.com/nsnam/ns-3-dev ns-3-dev
-cd ns-3-dev/src
-```
+First, download the main ns-3 repository following the instructions on [the ns-3 website](https://www.nsnam.org/releases/ns-3-29/).
 
 Then, clone the quic module:
 ```bash
@@ -45,7 +47,7 @@ to the `headers.source` list
 
 ### Compilation ###
 
-Configure and build ns-3 from the `ns-3-dev` folder:
+Configure and build ns-3 from the `ns-3.29` folder:
 
 ```bash
 ./waf configure --enable-tests --enable-examples
