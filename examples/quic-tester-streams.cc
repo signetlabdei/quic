@@ -103,8 +103,10 @@ main (int argc, char *argv[])
   CommandLine cmd;
   cmd.Parse (argc, argv);
 
-  Config::SetDefault ("ns3::QuicSocketBase::SocketSndBufSize", UintegerValue(10000000));
-  Config::SetDefault ("ns3::QuicSocketBase::SocketRcvBufSize", UintegerValue(10000000));
+  Config::SetDefault ("ns3::QuicSocketBase::SocketSndBufSize", UintegerValue(40000000));
+  Config::SetDefault ("ns3::QuicSocketBase::SocketRcvBufSize", UintegerValue(40000000));
+  Config::SetDefault ("ns3::QuicStreamBase::StreamSndBufSize", UintegerValue(40000000));
+  Config::SetDefault ("ns3::QuicStreamBase::StreamRcvBufSize", UintegerValue(40000000));
 
   std::cout
       << "\n\n#################### SIMULATION SET-UP ####################\n\n\n";
@@ -116,27 +118,27 @@ main (int argc, char *argv[])
   LogComponentEnableAll (LOG_PREFIX_NODE);
   LogComponentEnable ("QuicEchoClientApplication", log_precision);
   LogComponentEnable ("QuicEchoServerApplication", log_precision);
-  LogComponentEnable ("QuicHeader", log_precision);
-  LogComponentEnable ("QuicSocketBase", log_precision);
+  //LogComponentEnable ("QuicSocketBase", log_precision);
   LogComponentEnable ("QuicStreamBase", log_precision);
   LogComponentEnable("QuicStreamRxBuffer", log_precision);
-  LogComponentEnable ("Socket", log_precision);
+  LogComponentEnable("QuicStreamTxBuffer", log_precision);
+  //LogComponentEnable ("Socket", log_precision);
   // LogComponentEnable ("Application", log_precision);
   // LogComponentEnable ("Node", log_precision);
-  LogComponentEnable ("InternetStackHelper", log_precision);
-  LogComponentEnable ("QuicSocketFactory", log_precision);
-  LogComponentEnable ("ObjectFactory", log_precision);
+  //LogComponentEnable ("InternetStackHelper", log_precision);
+  //LogComponentEnable ("QuicSocketFactory", log_precision);
+  //LogComponentEnable ("ObjectFactory", log_precision);
   //LogComponentEnable ("TypeId", log_precision);
   //LogComponentEnable ("QuicL4Protocol", log_precision);
   LogComponentEnable ("QuicL5Protocol", log_precision);
   //LogComponentEnable ("ObjectBase", log_precision);
 
   //LogComponentEnable ("QuicEchoHelper", log_precision);
-  LogComponentEnable ("UdpSocketImpl", log_precision);
-  LogComponentEnable ("QuicHeader", log_precision);
-  LogComponentEnable ("QuicSubheader", log_precision);
-  LogComponentEnable ("Header", log_precision);
-  LogComponentEnable ("PacketMetadata", log_precision);
+  //LogComponentEnable ("UdpSocketImpl", log_precision);
+  //LogComponentEnable ("QuicHeader", log_precision);
+  //LogComponentEnable ("QuicSubheader", log_precision);
+  //LogComponentEnable ("Header", log_precision);
+  //LogComponentEnable ("PacketMetadata", log_precision);
   LogComponentEnable ("QuicSocketTxBuffer", log_precision);
 
 

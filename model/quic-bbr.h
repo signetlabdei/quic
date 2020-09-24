@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2018 NITK Surathkal, 2020 SIGNET Lab, Department of 
+ * Copyright (c) 2018 NITK Surathkal, 2020 SIGNET Lab, Department of
  * Information Engineering, University of Padova
  *
  * This program is free software; you can redistribute it and/or modify
@@ -77,7 +77,7 @@ public:
                          MaxFilter<DataRate>,
                          uint32_t,
                          uint32_t>
-  MaxBandwidthFilter_t;
+    MaxBandwidthFilter_t;
 
   /**
    * Assign a fixed random variable stream number to the random variables
@@ -95,8 +95,8 @@ public:
 
   virtual void OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, bool isAckOnly);
   virtual void OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
-                      std::vector<Ptr<QuicSocketTxItem>> newAcks, const struct RateSample *rs);
-  virtual void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxItem>> lostPackets);
+                              std::vector<Ptr<QuicSocketTxItem> > newAcks, const struct RateSample *rs);
+  virtual void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxItem> > lostPackets);
 
   virtual void CwndEvent (Ptr<TcpSocketState> tcb,
                           const TcpSocketState::TcpCAEvent_t event);

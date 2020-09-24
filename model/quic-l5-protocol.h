@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #ifndef QUICL5PROTOCOL_H
@@ -49,9 +49,9 @@ class QuicStreamBase;
  * - the binding of the QUIC socket to the QUIC streams
  *
  * The creation of QuicStreams are handled in the method CreateStream.
- * Upon creation, this class is responsible to the stream initialization and 
- * handle multiplexing/demultiplexing of data. Demultiplexing is done by 
- * receiving packets from a QUIC Socket, and forwards them to its associated 
+ * Upon creation, this class is responsible to the stream initialization and
+ * handle multiplexing/demultiplexing of data. Demultiplexing is done by
+ * receiving packets from a QUIC Socket, and forwards them to its associated
  * streams. Multiplexing is done through the DispatchSend function, which sends
  * the frames down the stack.
  *
@@ -221,10 +221,10 @@ public:
    * \param newMaxStreamData the updated value
    */
   void UpdateInitialMaxStreamData (uint32_t newMaxStreamData);
-  
+
   /**
    * \brief Return MAX_DATA for flow control (i.e., the sum of MAX_STREAM_DATA for all streams)
-   * 
+   *
    * \returns the new max data value
    */
   uint64_t GetMaxData ();

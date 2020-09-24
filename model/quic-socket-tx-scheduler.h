@@ -93,9 +93,9 @@ public:
   static TypeId GetTypeId (void);
 
   QuicSocketTxFifoScheduler ();
-  
+
   QuicSocketTxFifoScheduler (const QuicSocketTxFifoScheduler &other);
-  
+
   ~QuicSocketTxFifoScheduler (void);
 
   /**

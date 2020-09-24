@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #include <stdint.h>
@@ -45,13 +45,11 @@ QuicTransportParameters::QuicTransportParameters ()
     //m_stateless_reset_token(0),
     m_ack_delay_exponent (3),
     m_initial_max_stream_id_uni (0)
-{
-}
+{}
 
 
 QuicTransportParameters::~QuicTransportParameters ()
-{
-}
+{}
 
 TypeId
 QuicTransportParameters::GetTypeId (void)
@@ -169,16 +167,16 @@ bool
 operator== (const QuicTransportParameters &lhs, const QuicTransportParameters &rhs)
 {
   return (
-           lhs.m_initial_max_stream_data == rhs.m_initial_max_stream_data
-           && lhs.m_initial_max_data == rhs.m_initial_max_data
-           && lhs.m_initial_max_stream_id_bidi  == rhs.m_initial_max_stream_id_bidi
-           && lhs.m_idleTimeout == rhs.m_idleTimeout
-           && lhs.m_omit_connection == rhs.m_omit_connection
-           && lhs.m_max_packet_size == rhs.m_max_packet_size
-           //&& lhs.m_stateless_reset_token == rhs.m_stateless_reset_token
-           && lhs.m_ack_delay_exponent == rhs.m_ack_delay_exponent
-           && lhs.m_initial_max_stream_id_uni == rhs.m_initial_max_stream_id_uni
-           );
+    lhs.m_initial_max_stream_data == rhs.m_initial_max_stream_data
+    && lhs.m_initial_max_data == rhs.m_initial_max_data
+    && lhs.m_initial_max_stream_id_bidi  == rhs.m_initial_max_stream_id_bidi
+    && lhs.m_idleTimeout == rhs.m_idleTimeout
+    && lhs.m_omit_connection == rhs.m_omit_connection
+    && lhs.m_max_packet_size == rhs.m_max_packet_size
+    //&& lhs.m_stateless_reset_token == rhs.m_stateless_reset_token
+    && lhs.m_ack_delay_exponent == rhs.m_ack_delay_exponent
+    && lhs.m_initial_max_stream_id_uni == rhs.m_initial_max_stream_id_uni
+    );
 }
 
 std::ostream&

@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #include "ns3/assert.h"
@@ -67,14 +67,14 @@ QuicUdpBinding::QuicUdpBinding ()
   : m_budpSocket (0),
     m_budpSocket6 (0),
     m_quicSocket (nullptr),
-    m_listenerBinding(false)
+    m_listenerBinding (false)
 {
-  NS_LOG_FUNCTION(this);
+  NS_LOG_FUNCTION (this);
 }
 
 QuicUdpBinding::~QuicUdpBinding ()
 {
-  NS_LOG_FUNCTION(this);
+  NS_LOG_FUNCTION (this);
 
   m_budpSocket = 0;
   m_budpSocket6 = 0;
@@ -93,15 +93,15 @@ QuicUdpBinding::GetTypeId (void)
                    PointerValue (),
                    MakePointerAccessor (&QuicUdpBinding::m_quicSocket),
                    MakePointerChecker<QuicSocketBase> ())
-    ;
+  ;
   //NS_LOG_UNCOND("QuicUdpBinding");
   return tid;
 }
 
-TypeId 
+TypeId
 QuicUdpBinding::GetInstanceTypeId (void) const
 {
-  return GetTypeId();
+  return GetTypeId ();
 }
 
 
@@ -149,20 +149,20 @@ QuicL4Protocol::GetTypeId (void)
 QuicL4Protocol::QuicL4Protocol ()
   : m_node (0),
     m_0RTTHandshakeStart (false),
-    m_isServer(false),
-    m_endPoints (new Ipv4EndPointDemux ()), 
+    m_isServer (false),
+    m_endPoints (new Ipv4EndPointDemux ()),
     m_endPoints6 (new Ipv6EndPointDemux ())
 {
   NS_LOG_FUNCTION_NOARGS ();
   NS_LOG_LOGIC ("Created QuicL4Protocol object " << this);
-  
+
   m_quicUdpBindingList = QuicUdpBindingList ();
 }
 
 QuicL4Protocol::~QuicL4Protocol ()
 {
   NS_LOG_FUNCTION (this);
-  m_quicUdpBindingList.clear();
+  m_quicUdpBindingList.clear ();
 }
 
 void
@@ -267,34 +267,34 @@ QuicL4Protocol::UdpConnect (const Address & address, Ptr<QuicSocketBase> socket)
   NS_LOG_FUNCTION (this << address << socket);
   if (InetSocketAddress::IsMatchingType (address) == true)
     {
-        UdpBind (address, socket);
+      UdpBind (address, socket);
 
-        QuicUdpBindingList::iterator it;
-        for (it = m_quicUdpBindingList.begin (); it != m_quicUdpBindingList.end (); ++it)
-          {
-            Ptr<QuicUdpBinding> item = *it;
-            if (item->m_quicSocket == socket)
-              {
-                return item->m_budpSocket->Connect (address);
-              }
-          }
+      QuicUdpBindingList::iterator it;
+      for (it = m_quicUdpBindingList.begin (); it != m_quicUdpBindingList.end (); ++it)
+        {
+          Ptr<QuicUdpBinding> item = *it;
+          if (item->m_quicSocket == socket)
+            {
+              return item->m_budpSocket->Connect (address);
+            }
+        }
 
       NS_LOG_INFO ("UDP Socket: Connecting");
 
     }
   else if (Inet6SocketAddress::IsMatchingType (address) == true)
     {
-        UdpBind (address, socket);
+      UdpBind (address, socket);
 
-        QuicUdpBindingList::iterator it;
-        for (it = m_quicUdpBindingList.begin (); it != m_quicUdpBindingList.end (); ++it)
-          {
-            Ptr<QuicUdpBinding> item = *it;
-            if (item->m_quicSocket == socket)
-              {
-                return item->m_budpSocket6->Connect (address);
-              }
-          }
+      QuicUdpBindingList::iterator it;
+      for (it = m_quicUdpBindingList.begin (); it != m_quicUdpBindingList.end (); ++it)
+        {
+          Ptr<QuicUdpBinding> item = *it;
+          if (item->m_quicSocket == socket)
+            {
+              return item->m_budpSocket6->Connect (address);
+            }
+        }
       NS_LOG_INFO ("UDP Socket: Connecting");
 
     }
@@ -407,13 +407,13 @@ QuicL4Protocol::BindToNetDevice (Ptr<QuicSocketBase> quicSocket, Ptr<NetDevice> 
 bool
 QuicL4Protocol::SetListener (Ptr<QuicSocketBase> sock)
 {
-  NS_LOG_FUNCTION(this);
+  NS_LOG_FUNCTION (this);
 
-  if(sock != nullptr and m_quicUdpBindingList.size() == 1)
+  if (sock != nullptr and m_quicUdpBindingList.size () == 1)
     {
       m_isServer = true;
-      m_quicUdpBindingList.front()->m_quicSocket = sock;
-      m_quicUdpBindingList.front()->m_listenerBinding = true;
+      m_quicUdpBindingList.front ()->m_quicSocket = sock;
+      m_quicUdpBindingList.front ()->m_listenerBinding = true;
       return true;
     }
 
@@ -426,7 +426,7 @@ QuicL4Protocol::IsServer (void)  const
   return m_isServer;
 }
 
-const std::vector<Address>& 
+const std::vector<Address>&
 QuicL4Protocol::GetAuthAddresses () const
 {
   return m_authAddresses;
@@ -497,10 +497,10 @@ QuicL4Protocol::ForwardUp (Ptr<Socket> sock)
       NS_LOG_INFO ("Retry " << header.IsRetry ());
       NS_LOG_INFO ("0Rtt " << header.IsORTT ());*/
 
-      if (header.IsInitial () and m_isServer and socket == nullptr) 
+      if (header.IsInitial () and m_isServer and socket == nullptr)
         {
-          NS_LOG_LOGIC (this << " Cloning listening socket " << m_quicUdpBindingList.front()->m_quicSocket);
-          socket = CloneSocket (m_quicUdpBindingList.front()->m_quicSocket);
+          NS_LOG_LOGIC (this << " Cloning listening socket " << m_quicUdpBindingList.front ()->m_quicSocket);
+          socket = CloneSocket (m_quicUdpBindingList.front ()->m_quicSocket);
           socket->SetConnectionId (connectionId);
           socket->Connect (from);
           socket->SetupCallback ();
@@ -535,8 +535,8 @@ QuicL4Protocol::ForwardUp (Ptr<Socket> sock)
 
           NS_LOG_LOGIC ("CONNECTION AUTHENTICATED - Server authenticated Client " << InetSocketAddress::ConvertFrom (from).GetIpv4 () << " port " <<
                         InetSocketAddress::ConvertFrom (from).GetPort () << "");
-          NS_LOG_LOGIC ( this << " Cloning listening socket " << m_quicUdpBindingList.front()->m_quicSocket);
-          socket = CloneSocket (m_quicUdpBindingList.front()->m_quicSocket);
+          NS_LOG_LOGIC ( this << " Cloning listening socket " << m_quicUdpBindingList.front ()->m_quicSocket);
+          socket = CloneSocket (m_quicUdpBindingList.front ()->m_quicSocket);
           socket->SetConnectionId (connectionId);
           socket->Connect (from);
           socket->SetupCallback ();
@@ -593,7 +593,7 @@ QuicL4Protocol::SetRecvCallback (Callback<void, Ptr<Packet>, const QuicHeader&, 
         }
       else if (item->m_quicSocket == sock)
         {
-          NS_FATAL_ERROR("The UDP socket for this QuicUdpBinding item is not set");
+          NS_FATAL_ERROR ("The UDP socket for this QuicUdpBinding item is not set");
         }
     }
 }
@@ -680,7 +680,7 @@ QuicL4Protocol::CreateSocket (TypeId congestionTypeId)
   socket->SetNode (m_node);
   socket->SetQuicL4 (this);
 
-  socket->InitializeScheduling();
+  socket->InitializeScheduling ();
 
   // generate a random connection ID and check that has not been assigned to other
   // sockets associated to this L4 protocol
@@ -800,14 +800,14 @@ QuicL4Protocol::SendPacket (Ptr<QuicSocketBase> socket, Ptr<Packet> pkt, const Q
 
   QuicUdpBindingList::const_iterator it;
   for (it = m_quicUdpBindingList.begin (); it != m_quicUdpBindingList.end (); ++it)
-  {
-    Ptr<QuicUdpBinding> item = *it;
-    if (item->m_quicSocket == socket)
-      {
-        UdpSend (item->m_budpSocket, packetSent, 0);
-        break;
-      }
-  }
+    {
+      Ptr<QuicUdpBinding> item = *it;
+      if (item->m_quicSocket == socket)
+        {
+          UdpSend (item->m_budpSocket, packetSent, 0);
+          break;
+        }
+    }
 }
 
 
@@ -821,29 +821,32 @@ QuicL4Protocol::RemoveSocket (Ptr<QuicSocketBase> socket)
   bool closedListener = false;
 
   for (iter = m_quicUdpBindingList.begin (); iter != m_quicUdpBindingList.end (); ++iter)
-  {
-    Ptr<QuicUdpBinding> item = *iter;
-    if (item->m_quicSocket == socket){
-        found = true;
-        if (item->m_listenerBinding){
-          closedListener = true;
-        }
-        m_quicUdpBindingList.erase (iter);
+    {
+      Ptr<QuicUdpBinding> item = *iter;
+      if (item->m_quicSocket == socket)
+        {
+          found = true;
+          if (item->m_listenerBinding)
+            {
+              closedListener = true;
+            }
+          m_quicUdpBindingList.erase (iter);
 
-        break;
+          break;
+        }
     }
-  }
 
   //if closing the listener, close all the clone ones
-  if(closedListener){
-    NS_LOG_LOGIC (this << " Closing all the cloned sockets");
-    iter = m_quicUdpBindingList.begin ();
-    while (iter != m_quicUdpBindingList.end ())
-      {
-        (*iter)->m_quicSocket->Close ();
-        ++iter;
-      }
-  }
+  if (closedListener)
+    {
+      NS_LOG_LOGIC (this << " Closing all the cloned sockets");
+      iter = m_quicUdpBindingList.begin ();
+      while (iter != m_quicUdpBindingList.end ())
+        {
+          (*iter)->m_quicSocket->Close ();
+          ++iter;
+        }
+    }
 
   return found;
 }
@@ -878,8 +881,8 @@ QuicL4Protocol::Allocate (Ptr<NetDevice> boundNetDevice, Ipv4Address address, ui
 
 Ipv4EndPoint *
 QuicL4Protocol::Allocate (Ptr<NetDevice> boundNetDevice,
-                         Ipv4Address localAddress, uint16_t localPort,
-                         Ipv4Address peerAddress, uint16_t peerPort)
+                          Ipv4Address localAddress, uint16_t localPort,
+                          Ipv4Address peerAddress, uint16_t peerPort)
 {
   NS_LOG_FUNCTION (this << boundNetDevice << localAddress << localPort << peerAddress << peerPort);
   return m_endPoints->Allocate (boundNetDevice,
@@ -917,8 +920,8 @@ QuicL4Protocol::Allocate6 (Ptr<NetDevice> boundNetDevice, Ipv6Address address, u
 
 Ipv6EndPoint *
 QuicL4Protocol::Allocate6 (Ptr<NetDevice> boundNetDevice,
-                          Ipv6Address localAddress, uint16_t localPort,
-                          Ipv6Address peerAddress, uint16_t peerPort)
+                           Ipv6Address localAddress, uint16_t localPort,
+                           Ipv6Address peerAddress, uint16_t peerPort)
 {
   NS_LOG_FUNCTION (this << boundNetDevice << localAddress << localPort << peerAddress << peerPort);
   return m_endPoints6->Allocate (boundNetDevice,

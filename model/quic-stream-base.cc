@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 /*
 #define NS_LOG_APPEND_CONTEXT \
@@ -63,11 +63,11 @@ QuicStreamBase::GetTypeId (void)
                    UintegerValue (131072), // 128k
                    MakeUintegerAccessor (&QuicStreamBase::m_streamRxBufferSize),
                    MakeUintegerChecker<uint32_t> ())
-	.AddAttribute ("MaxDataInterval",
-				   "Interval between MAX_DATA frames",
-				   UintegerValue (15000), // 10 packets
-				   MakeUintegerAccessor (&QuicStreamBase::m_maxDataInterval),
-				   MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("MaxDataInterval",
+                   "Interval between MAX_DATA frames",
+                   UintegerValue (15000),                 // 10 packets
+                   MakeUintegerAccessor (&QuicStreamBase::m_maxDataInterval),
+                   MakeUintegerChecker<uint32_t> ())
   ;
   return tid;
 }
@@ -90,7 +90,7 @@ QuicStreamBase::QuicStreamBase (void) // @suppress("Class members should be prop
     m_streamId (0),
     m_quicl5 (0),
     m_maxStreamData (0),
-	m_maxAdvertisedData (0),
+    m_maxAdvertisedData (0),
     m_sentSize (0),
     m_recvSize (0),
     m_fin (false)
@@ -110,8 +110,8 @@ QuicStreamBase::SetQuicL5 (Ptr<QuicL5Protocol> quicl5)
 {
   NS_LOG_FUNCTION (this);
   m_quicl5 = quicl5;
-  SetStreamRcvBufSize(m_streamRxBufferSize);
-  SetStreamRcvBufSize(m_streamTxBufferSize);
+  SetStreamRcvBufSize (m_streamRxBufferSize);
+  SetStreamRcvBufSize (m_streamTxBufferSize);
 }
 
 
@@ -163,9 +163,9 @@ QuicStreamBase::AppendingTx (Ptr<Packet> frame)
 }
 
 uint32_t
-QuicStreamBase::GetStreamTxAvailable() const
+QuicStreamBase::GetStreamTxAvailable () const
 {
-  return m_txBuffer->Available();
+  return m_txBuffer->Available ();
 }
 
 
@@ -298,205 +298,205 @@ QuicStreamBase::Recv (Ptr<Packet> frame, const QuicSubheader& sub, Address &addr
   switch (frameType)
     {
 
-    case QuicSubheader::RST_STREAM:
-      // TODO reset and close this stream
-      if (m_streamId == 0)
-        {
-          m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
-                                           "Received RST_STREAM in Stream 0");
-          return -1;
-        }
-
-      if (!(m_streamDirectionType == RECEIVER or m_streamDirectionType == BIDIRECTIONAL))
-        {
-          m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
-                                           "Received RST_STREAM in send-only Stream");
-          return -1;
-        }
-
-      if ((m_streamStateRecv == DATA_READ or m_streamStateRecv == RESET_READ))
-        {
-          m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
-                                           "Receiving RST_STREAM Frames in DATA_READ or RESET_READ Stream State");
-          return -1;
-        }
-
-      if (m_fin and m_rxBuffer->GetFinalSize () != sub.GetOffset ())
-        {
-          m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::FINAL_OFFSET_ERROR,
-                                           "RST_STREAM causes final offset to change for a Stream");
-          return -1;
-        }
-
-      SetStreamStateRecvIf (m_streamStateRecv == RECV or m_streamStateSend == SIZE_KNOWN or m_streamStateSend == DATA_RECVD, RESET_RECVD);
-
-      break;
-
-    case QuicSubheader::MAX_STREAM_DATA:
-      if (!(m_streamDirectionType == SENDER or m_streamDirectionType == BIDIRECTIONAL))
-        {
-          m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
-                                           "Received MAX_STREAM_DATA in receive-only Stream");
-          return -1;
-        }
-      else
-        {
-          SetMaxStreamData (sub.GetMaxStreamData ());
-          NS_LOG_INFO ("Max stream data (flow control) - " << m_maxStreamData);
-        }
-
-      break;
-
-    case QuicSubheader::STREAM_BLOCKED:
-      // TODO block the stream
-      if (!(m_streamDirectionType == RECEIVER or m_streamDirectionType == BIDIRECTIONAL))
-        {
-          m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
-                                           "Received STREAM_BLOCKED in send-only Stream");
-          return -1;
-        }
-
-      break;
-
-    case QuicSubheader::STOP_SENDING:
-      // TODO implement a mechanism to stop sending data
-      if (!(m_streamDirectionType == SENDER or m_streamDirectionType == BIDIRECTIONAL))
-        {
-          m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
-                                           "Received STOP_SENDING in receive-only Stream");
-          return -1;
-        }
-
-      break;
-
-    case QuicSubheader::STREAM000:
-    case QuicSubheader::STREAM001:
-    case QuicSubheader::STREAM010:
-    case QuicSubheader::STREAM011:
-    case QuicSubheader::STREAM100:
-    case QuicSubheader::STREAM101:
-    case QuicSubheader::STREAM110:
-    case QuicSubheader::STREAM111:
-
-
-      if (!(m_streamDirectionType == RECEIVER or m_streamDirectionType == BIDIRECTIONAL))
-        {
-          m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
-                                           "Received STREAM in send-only Stream");
-          return -1;
-        }
-
-      if (!(m_streamStateRecv == IDLE or m_streamStateRecv == RECV or m_streamStateRecv == SIZE_KNOWN))
-        {
-          m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
-                                           "Received STREAM in State unequal to IDLE, RECV, SIZE_KNOWN");
-          return -1;
-        }
-
-      if (m_rxBuffer->Size () + sub.GetLength () > m_maxStreamData)
-        {
-          m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::FLOW_CONTROL_ERROR,
-                                           "Received more data w.r.t. Max Stream Data limit");
-          return -1;
-        }
-
-      SetStreamStateRecvIf (m_streamStateRecv == IDLE, RECV);
-
-      if (m_quicl5->ContainsTransportParameters () and m_streamId == 0)
-        {
-          QuicTransportParameters transport;
-          frame->RemoveHeader (transport);
-          m_quicl5->OnReceivedTransportParameters (transport);
-        }
-
-      if (m_fin and sub.IsStreamFin () and m_rxBuffer->GetFinalSize () != sub.GetOffset ())
-        {
-          m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::FINAL_OFFSET_ERROR,
-                                           "STREAM causes final offset to change for a Stream");
-          return -1;
-        }
-
-      m_fin = sub.IsStreamFin ();
-
-      if (m_fin && m_streamId == 0)
-        {
-          m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
-                                           "Received Stream FIN in Stream 0");
-          return -1;
-        }
-
-      SetStreamStateRecvIf (m_streamStateRecv == RECV and m_fin, SIZE_KNOWN);
-
-      if (m_recvSize == sub.GetOffset ())
-        {
-
-          NS_LOG_INFO ("Received a frame with the correct order of size " << sub.GetLength ());
-          m_recvSize += sub.GetLength ();
-
-          if (m_maxAdvertisedData == 0 || m_recvSize + m_rxBuffer->Available () > m_maxAdvertisedData + m_maxDataInterval)
+      case QuicSubheader::RST_STREAM:
+        // TODO reset and close this stream
+        if (m_streamId == 0)
           {
-        	m_maxAdvertisedData = m_recvSize + m_rxBuffer->Available ();
-            QuicSubheader sub = QuicSubheader::CreateMaxData(m_recvSize + m_rxBuffer->Available ());
-            // build empty packet
-            Ptr<Packet> maxStream = Create<Packet> (0);
-            maxStream->AddHeader (sub);
-            m_quicl5->Send (maxStream);
+            m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
+                                             "Received RST_STREAM in Stream 0");
+            return -1;
           }
 
-          NS_LOG_LOGIC ("Try to Flush RxBuffer if Available - offset " << m_recvSize);
-          // check if the packets in the RX buffer can be released (in order release)
-          std::pair<uint64_t, uint64_t> offSetLength = m_rxBuffer->GetDeliverable (m_recvSize);
-          NS_LOG_LOGIC ("Extracting " << offSetLength.second << " bytes from RxBuffer");
-          if (offSetLength.second > 0)
-            {
-              Ptr<Packet> payload = m_rxBuffer->Extract (offSetLength.second);
-              m_recvSize += offSetLength.second;
-              frame->AddAtEnd (payload);
-            }
-          NS_LOG_LOGIC ("Flushed RxBuffer - new offset " << m_recvSize << ", " << m_rxBuffer->Available () << "bytes available");
+        if (!(m_streamDirectionType == RECEIVER or m_streamDirectionType == BIDIRECTIONAL))
+          {
+            m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
+                                             "Received RST_STREAM in send-only Stream");
+            return -1;
+          }
 
-          SetStreamStateRecvIf (m_streamStateRecv == SIZE_KNOWN and m_rxBuffer->Size () == 0, DATA_RECVD);
+        if ((m_streamStateRecv == DATA_READ or m_streamStateRecv == RESET_READ))
+          {
+            m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
+                                             "Receiving RST_STREAM Frames in DATA_READ or RESET_READ Stream State");
+            return -1;
+          }
 
-          if (m_streamId != 0 )
-            {
-              if (sub.GetMaxStreamData () > 0)
-                {
-                  SetMaxStreamData (sub.GetMaxStreamData ());
-                  NS_LOG_LOGIC ("Received window set to offset " << sub.GetMaxStreamData ());
-                }
-              m_quicl5->Recv (frame, address);
-            }
-          else
-            {
-              NS_LOG_INFO ("Received handshake Message in Stream 0");
-            }
+        if (m_fin and m_rxBuffer->GetFinalSize () != sub.GetOffset ())
+          {
+            m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::FINAL_OFFSET_ERROR,
+                                             "RST_STREAM causes final offset to change for a Stream");
+            return -1;
+          }
 
-          SetStreamStateRecvIf (m_streamStateRecv == DATA_RECVD, DATA_READ);
+        SetStreamStateRecvIf (m_streamStateRecv == RECV or m_streamStateSend == SIZE_KNOWN or m_streamStateSend == DATA_RECVD, RESET_RECVD);
 
-        }
-      else
-        {
-          if (m_streamId != 0 && sub.GetMaxStreamData () > 0)
-            {
-              SetMaxStreamData (sub.GetMaxStreamData ());
-              NS_LOG_LOGIC ("Received window set to offset " << sub.GetMaxStreamData ());
-            }
-          NS_LOG_INFO ("Buffering unordered received frame - offset " << m_recvSize << ", frame offset "<< sub.GetOffset());
-          if (!m_rxBuffer->Add (frame, sub) && frame->GetSize() > 0)
-            {
-              // Insert failed: No data or RX buffer full
-              NS_LOG_INFO ("Dropping packet due to full RX buffer");
-              // Abort simulation!
-              NS_ABORT_MSG ("Aborting Connection");
-            }
-        }
+        break;
 
-      break;
+      case QuicSubheader::MAX_STREAM_DATA:
+        if (!(m_streamDirectionType == SENDER or m_streamDirectionType == BIDIRECTIONAL))
+          {
+            m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
+                                             "Received MAX_STREAM_DATA in receive-only Stream");
+            return -1;
+          }
+        else
+          {
+            SetMaxStreamData (sub.GetMaxStreamData ());
+            NS_LOG_INFO ("Max stream data (flow control) - " << m_maxStreamData);
+          }
 
-    default:
+        break;
 
-      NS_ABORT_MSG ("Received Corrupted Frame");
-      break;
+      case QuicSubheader::STREAM_BLOCKED:
+        // TODO block the stream
+        if (!(m_streamDirectionType == RECEIVER or m_streamDirectionType == BIDIRECTIONAL))
+          {
+            m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
+                                             "Received STREAM_BLOCKED in send-only Stream");
+            return -1;
+          }
+
+        break;
+
+      case QuicSubheader::STOP_SENDING:
+        // TODO implement a mechanism to stop sending data
+        if (!(m_streamDirectionType == SENDER or m_streamDirectionType == BIDIRECTIONAL))
+          {
+            m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
+                                             "Received STOP_SENDING in receive-only Stream");
+            return -1;
+          }
+
+        break;
+
+      case QuicSubheader::STREAM000:
+      case QuicSubheader::STREAM001:
+      case QuicSubheader::STREAM010:
+      case QuicSubheader::STREAM011:
+      case QuicSubheader::STREAM100:
+      case QuicSubheader::STREAM101:
+      case QuicSubheader::STREAM110:
+      case QuicSubheader::STREAM111:
+
+
+        if (!(m_streamDirectionType == RECEIVER or m_streamDirectionType == BIDIRECTIONAL))
+          {
+            m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
+                                             "Received STREAM in send-only Stream");
+            return -1;
+          }
+
+        if (!(m_streamStateRecv == IDLE or m_streamStateRecv == RECV or m_streamStateRecv == SIZE_KNOWN))
+          {
+            m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
+                                             "Received STREAM in State unequal to IDLE, RECV, SIZE_KNOWN");
+            return -1;
+          }
+
+        if (m_rxBuffer->Size () + sub.GetLength () > m_maxStreamData)
+          {
+            m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::FLOW_CONTROL_ERROR,
+                                             "Received more data w.r.t. Max Stream Data limit");
+            return -1;
+          }
+
+        SetStreamStateRecvIf (m_streamStateRecv == IDLE, RECV);
+
+        if (m_quicl5->ContainsTransportParameters () and m_streamId == 0)
+          {
+            QuicTransportParameters transport;
+            frame->RemoveHeader (transport);
+            m_quicl5->OnReceivedTransportParameters (transport);
+          }
+
+        if (m_fin and sub.IsStreamFin () and m_rxBuffer->GetFinalSize () != sub.GetOffset ())
+          {
+            m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::FINAL_OFFSET_ERROR,
+                                             "STREAM causes final offset to change for a Stream");
+            return -1;
+          }
+
+        m_fin = sub.IsStreamFin ();
+
+        if (m_fin && m_streamId == 0)
+          {
+            m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::PROTOCOL_VIOLATION,
+                                             "Received Stream FIN in Stream 0");
+            return -1;
+          }
+
+        SetStreamStateRecvIf (m_streamStateRecv == RECV and m_fin, SIZE_KNOWN);
+
+        if (m_recvSize == sub.GetOffset ())
+          {
+
+            NS_LOG_INFO ("Received a frame with the correct order of size " << sub.GetLength ());
+            m_recvSize += sub.GetLength ();
+
+            if (m_maxAdvertisedData == 0 || m_recvSize + m_rxBuffer->Available () > m_maxAdvertisedData + m_maxDataInterval)
+              {
+                m_maxAdvertisedData = m_recvSize + m_rxBuffer->Available ();
+                QuicSubheader sub = QuicSubheader::CreateMaxData (m_recvSize + m_rxBuffer->Available ());
+                // build empty packet
+                Ptr<Packet> maxStream = Create<Packet> (0);
+                maxStream->AddHeader (sub);
+                m_quicl5->Send (maxStream);
+              }
+
+            NS_LOG_LOGIC ("Try to Flush RxBuffer if Available - offset " << m_recvSize);
+            // check if the packets in the RX buffer can be released (in order release)
+            std::pair<uint64_t, uint64_t> offSetLength = m_rxBuffer->GetDeliverable (m_recvSize);
+            NS_LOG_LOGIC ("Extracting " << offSetLength.second << " bytes from RxBuffer");
+            if (offSetLength.second > 0)
+              {
+                Ptr<Packet> payload = m_rxBuffer->Extract (offSetLength.second);
+                m_recvSize += offSetLength.second;
+                frame->AddAtEnd (payload);
+              }
+            NS_LOG_LOGIC ("Flushed RxBuffer - new offset " << m_recvSize << ", " << m_rxBuffer->Available () << "bytes available");
+
+            SetStreamStateRecvIf (m_streamStateRecv == SIZE_KNOWN and m_rxBuffer->Size () == 0, DATA_RECVD);
+
+            if (m_streamId != 0 )
+              {
+                if (sub.GetMaxStreamData () > 0)
+                  {
+                    SetMaxStreamData (sub.GetMaxStreamData ());
+                    NS_LOG_LOGIC ("Received window set to offset " << sub.GetMaxStreamData ());
+                  }
+                m_quicl5->Recv (frame, address);
+              }
+            else
+              {
+                NS_LOG_INFO ("Received handshake Message in Stream 0");
+              }
+
+            SetStreamStateRecvIf (m_streamStateRecv == DATA_RECVD, DATA_READ);
+
+          }
+        else
+          {
+            if (m_streamId != 0 && sub.GetMaxStreamData () > 0)
+              {
+                SetMaxStreamData (sub.GetMaxStreamData ());
+                NS_LOG_LOGIC ("Received window set to offset " << sub.GetMaxStreamData ());
+              }
+            NS_LOG_INFO ("Buffering unordered received frame - offset " << m_recvSize << ", frame offset " << sub.GetOffset ());
+            if (!m_rxBuffer->Add (frame, sub) && frame->GetSize () > 0)
+              {
+                // Insert failed: No data or RX buffer full
+                NS_LOG_INFO ("Dropping packet due to full RX buffer");
+                // Abort simulation!
+                NS_ABORT_MSG ("Aborting Connection");
+              }
+          }
+
+        break;
+
+      default:
+
+        NS_ABORT_MSG ("Received Corrupted Frame");
+        break;
     }
 
   return 0;
@@ -575,7 +575,7 @@ QuicStreamBase::SetStreamDirectionType (const QuicStreamDirectionTypes_t& stream
 
 QuicStream::QuicStreamDirectionTypes_t
 QuicStreamBase::GetStreamDirectionType ()
-{  
+{
   return m_streamDirectionType;
 }
 
@@ -589,7 +589,7 @@ QuicStreamBase::SetStreamType (const QuicStreamTypes_t& streamType)
 void
 QuicStreamBase::SetStreamStateSend (const QuicStreamStates_t& streamState)
 {
-  NS_LOG_FUNCTION(this);
+  NS_LOG_FUNCTION (this);
 
   if (m_streamType == SERVER_INITIATED_BIDIRECTIONAL or m_streamType == SERVER_INITIATED_UNIDIRECTIONAL)
     {
@@ -621,7 +621,7 @@ QuicStreamBase::SetStreamStateSendIf (bool condition, const QuicStreamStates_t& 
 void
 QuicStreamBase::SetStreamStateRecv (const QuicStreamStates_t& streamState)
 {
-  NS_LOG_FUNCTION(this);
+  NS_LOG_FUNCTION (this);
 
   if (m_streamType == SERVER_INITIATED_BIDIRECTIONAL or m_streamType == SERVER_INITIATED_UNIDIRECTIONAL)
     {
@@ -667,18 +667,18 @@ QuicStreamBase::SetStreamId (uint64_t streamId)
   switch (m_streamId & mask)
     {
 
-    case 0:
-      SetStreamType (QuicStream::CLIENT_INITIATED_BIDIRECTIONAL);
-      break;
-    case 1:
-      SetStreamType (QuicStream::SERVER_INITIATED_BIDIRECTIONAL);
-      break;
-    case 2:
-      SetStreamType (QuicStream::CLIENT_INITIATED_UNIDIRECTIONAL);
-      break;
-    case 3:
-      SetStreamType (QuicStream::SERVER_INITIATED_UNIDIRECTIONAL);
-      break;
+      case 0:
+        SetStreamType (QuicStream::CLIENT_INITIATED_BIDIRECTIONAL);
+        break;
+      case 1:
+        SetStreamType (QuicStream::SERVER_INITIATED_BIDIRECTIONAL);
+        break;
+      case 2:
+        SetStreamType (QuicStream::CLIENT_INITIATED_UNIDIRECTIONAL);
+        break;
+      case 3:
+        SetStreamType (QuicStream::SERVER_INITIATED_UNIDIRECTIONAL);
+        break;
     }
 
 }

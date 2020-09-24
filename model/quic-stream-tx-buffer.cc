@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #include <algorithm>
@@ -44,8 +44,7 @@ QuicStreamTxItem::QuicStreamTxItem ()
     m_sacked (false),
     m_lastSent (Time::Min ()),
     m_id (0)
-{
-}
+{}
 
 QuicStreamTxItem::QuicStreamTxItem (const QuicStreamTxItem &other)
   : m_packetNumberSequence (other.m_packetNumberSequence),
@@ -55,8 +54,7 @@ QuicStreamTxItem::QuicStreamTxItem (const QuicStreamTxItem &other)
     m_sacked (other.m_sacked),
     m_lastSent (other.m_lastSent),
     m_id (other.m_id)
-{
-}
+{}
 
 void
 QuicStreamTxItem::Print (std::ostream &os) const
@@ -142,11 +140,11 @@ QuicStreamTxBuffer::Print (std::ostream & os) const
     }
 
   os << "App list: \n" << as.str () <<
-  "\n\nSent list: \n" << ss.str () <<
-  "\n\nCurrent Status: " <<
-  "\nNumber of transmissions = " << m_sentList.size () <<
-  "\nApplication Size = " << m_appSize <<
-  "\nSent Size = " << m_sentSize;
+    "\n\nSent list: \n" << ss.str () <<
+    "\n\nCurrent Status: " <<
+    "\nNumber of transmissions = " << m_sentList.size () <<
+    "\nApplication Size = " << m_appSize <<
+    "\nSent Size = " << m_sentSize;
 }
 
 bool
@@ -276,24 +274,24 @@ QuicStreamTxBuffer::GetNewSegment (uint32_t numBytes)
           continue;
         }
       else
-      {
-    	  // The packet is too large, split it
-    	  uint32_t split = numBytes - outItemSize;
+        {
+          // The packet is too large, split it
+          uint32_t split = numBytes - outItemSize;
 
-        QuicStreamTxItem *toBeBuffered = new QuicStreamTxItem ();
-    	  SplitItems(*currentItem, *toBeBuffered, split);
+          QuicStreamTxItem *toBeBuffered = new QuicStreamTxItem ();
+          SplitItems (*currentItem, *toBeBuffered, split);
 
-    	  // Add left part of the split to subframe
-        NS_LOG_LOGIC ("Add incomplete subframe to the outItem");
-        MergeItems (*outItem, *currentItem);
-        outItemSize += currentItem->m_packet->GetSize ();
+          // Add left part of the split to subframe
+          NS_LOG_LOGIC ("Add incomplete subframe to the outItem");
+          MergeItems (*outItem, *currentItem);
+          outItemSize += currentItem->m_packet->GetSize ();
 
-        m_appList.erase (it);
-        m_appSize -= currentItem->m_packet->GetSize ();
+          m_appList.erase (it);
+          m_appSize -= currentItem->m_packet->GetSize ();
 
-        m_appList.push_front (toBeBuffered);
+          m_appList.push_front (toBeBuffered);
 
-      }
+        }
 
       it++;
     }
@@ -333,7 +331,7 @@ QuicStreamTxBuffer::OnAckUpdate (const uint64_t largestAcknowledged, const std::
               break;
             }
 
-          if ((*sent_it)->m_packetNumberSequence <= (SequenceNumber32)(*ack_it)and (*sent_it)->m_packetNumberSequence > (SequenceNumber32)(*gap_it)and (*sent_it)->m_sacked == false)
+          if ((*sent_it)->m_packetNumberSequence <= (SequenceNumber32)(*ack_it) and (*sent_it)->m_packetNumberSequence > (SequenceNumber32)(*gap_it) and (*sent_it)->m_sacked == false)
             {
               NS_LOG_LOGIC ("Acked packet " << (*sent_it)->m_packetNumberSequence);
               (*sent_it)->m_sacked = true;
@@ -377,7 +375,7 @@ QuicStreamTxBuffer::MergeItems (QuicStreamTxItem &t1, QuicStreamTxItem &t2) cons
 void
 QuicStreamTxBuffer::SplitItems (QuicStreamTxItem &t1, QuicStreamTxItem &t2, uint32_t size) const
 {
-  uint32_t initialSize = t1.m_packet->GetSize();
+  uint32_t initialSize = t1.m_packet->GetSize ();
 
   t2.m_sacked = t1.m_sacked;
   t2.m_retrans = t1.m_retrans;
@@ -392,14 +390,14 @@ QuicStreamTxBuffer::SplitItems (QuicStreamTxItem &t1, QuicStreamTxItem &t2, uint
       t1.m_lost = true;
     }
   // Copy the packet into t2
-  t2.m_packet = t1.m_packet->Copy();
+  t2.m_packet = t1.m_packet->Copy ();
   // Remove the first size bytes from t2
-  t2.m_packet->RemoveAtStart(size);
+  t2.m_packet->RemoveAtStart (size);
 
   NS_ASSERT_MSG (t2.m_packet->GetSize () == initialSize - size,
                  "Wrong size " << t2.m_packet->GetSize ());
   // Remove the bytes from size to end from t1
-  t1.m_packet->RemoveAtEnd(t1.m_packet->GetSize() - size);
+  t1.m_packet->RemoveAtEnd (t1.m_packet->GetSize () - size);
   NS_ASSERT_MSG (t1.m_packet->GetSize () == size,
                  "Wrong size " << t1.m_packet->GetSize ());
 }

@@ -1,4 +1,4 @@
-QUIC implementation for QUIC in ns-3
+QUIC implementation in ns-3
 ================================
 
 ## QUIC code base

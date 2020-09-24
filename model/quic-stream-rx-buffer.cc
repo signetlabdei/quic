@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #include "ns3/packet.h"
@@ -44,15 +44,13 @@ QuicStreamRxItem::QuicStreamRxItem ()
   : m_packet (0),
     m_offset (0),
     m_fin (false)
-{
-}
+{}
 
 QuicStreamRxItem::QuicStreamRxItem (const QuicStreamRxItem &other)
   : m_packet (other.m_packet),
     m_offset (other.m_offset),
     m_fin (other.m_fin)
-{
-}
+{}
 
 void
 QuicStreamRxItem::Print (std::ostream &os) const
@@ -88,8 +86,7 @@ QuicStreamRxBuffer::QuicStreamRxBuffer ()
 }
 
 QuicStreamRxBuffer::~QuicStreamRxBuffer ()
-{
-}
+{}
 
 bool
 QuicStreamRxBuffer::Add (Ptr<Packet> p, const QuicSubheader& sub)

@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #ifndef QUICSOCKETRXBUFFER_H
@@ -71,7 +71,7 @@ public:
    */
   bool operator== (const QuicSocketRxItem& other)
   {
-    return (this->m_offset == other.m_offset)and (this->m_fin == other.m_fin) and (this->m_packet == other.m_packet);
+    return (this->m_offset == other.m_offset) and (this->m_fin == other.m_fin) and (this->m_packet == other.m_packet);
   }
 
   Ptr<Packet> m_packet;  //!< Stream Frame

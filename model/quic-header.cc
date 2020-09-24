@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #include <stdint.h>
@@ -43,13 +43,11 @@ QuicHeader::QuicHeader ()
     m_connectionId (0),
     m_packetNumber (0),
     m_version (0)
-{
-}
+{}
 
 
 QuicHeader::~QuicHeader ()
-{
-}
+{}
 
 std::string
 QuicHeader::TypeToString () const
@@ -136,21 +134,21 @@ QuicHeader::GetPacketNumLen () const
     {
       switch (m_type)
         {
-        case ONE_OCTECT:
-          {
-            return 8;
-            break;
-          }
-        case TWO_OCTECTS:
-          {
-            return 16;
-            break;
-          }
-        case FOUR_OCTECTS:
-          {
-            return 32;
-            break;
-          }
+          case ONE_OCTECT:
+            {
+              return 8;
+              break;
+            }
+          case TWO_OCTECTS:
+            {
+              return 16;
+              break;
+            }
+          case FOUR_OCTECTS:
+            {
+              return 32;
+              break;
+            }
         }
     }
   NS_FATAL_ERROR ("Invalid conditions");
@@ -190,15 +188,15 @@ QuicHeader::Serialize (Buffer::Iterator start) const
 
       switch (m_type)
         {
-        case ONE_OCTECT:
-          i.WriteU8 ((uint8_t)m_packetNumber.GetValue ());
-          break;
-        case TWO_OCTECTS:
-          i.WriteHtonU16 ((uint16_t)m_packetNumber.GetValue ());
-          break;
-        case FOUR_OCTECTS:
-          i.WriteHtonU32 ((uint32_t)m_packetNumber.GetValue ());
-          break;
+          case ONE_OCTECT:
+            i.WriteU8 ((uint8_t)m_packetNumber.GetValue ());
+            break;
+          case TWO_OCTECTS:
+            i.WriteHtonU16 ((uint16_t)m_packetNumber.GetValue ());
+            break;
+          case FOUR_OCTECTS:
+            i.WriteHtonU32 ((uint32_t)m_packetNumber.GetValue ());
+            break;
         }
     }
 }
@@ -243,15 +241,15 @@ QuicHeader::Deserialize (Buffer::Iterator start)
     {
       switch (m_type)
         {
-        case ONE_OCTECT:
-          SetPacketNumber (SequenceNumber32 (i.ReadU8 ()));
-          break;
-        case TWO_OCTECTS:
-          SetPacketNumber (SequenceNumber32 (i.ReadNtohU16 ()));
-          break;
-        case FOUR_OCTECTS:
-          SetPacketNumber (SequenceNumber32 (i.ReadNtohU32 ()));
-          break;
+          case ONE_OCTECT:
+            SetPacketNumber (SequenceNumber32 (i.ReadU8 ()));
+            break;
+          case TWO_OCTECTS:
+            SetPacketNumber (SequenceNumber32 (i.ReadNtohU16 ()));
+            break;
+          case FOUR_OCTECTS:
+            SetPacketNumber (SequenceNumber32 (i.ReadNtohU32 ()));
+            break;
         }
     }
 
@@ -545,14 +543,14 @@ bool
 operator== (const QuicHeader &lhs, const QuicHeader &rhs)
 {
   return (
-           lhs.m_form == rhs.m_form
-           && lhs.m_c == rhs.m_c
-           && lhs.m_k  == rhs.m_k
-           && lhs.m_type == rhs.m_type
-           && lhs.m_connectionId == rhs.m_connectionId
-           && lhs.m_packetNumber == rhs.m_packetNumber
-           && lhs.m_version == rhs.m_version
-           );
+    lhs.m_form == rhs.m_form
+    && lhs.m_c == rhs.m_c
+    && lhs.m_k  == rhs.m_k
+    && lhs.m_type == rhs.m_type
+    && lhs.m_connectionId == rhs.m_connectionId
+    && lhs.m_packetNumber == rhs.m_packetNumber
+    && lhs.m_version == rhs.m_version
+    );
 }
 
 std::ostream&

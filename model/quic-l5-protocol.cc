@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #include "ns3/assert.h"
@@ -62,11 +62,11 @@ QuicL5Protocol::GetTypeId (void)
   static TypeId tid =
     TypeId ("ns3::QuicL5Protocol").SetParent<QuicSocketBase> ().SetGroupName (
       "Internet").AddConstructor<QuicL5Protocol> ()
-      .AddAttribute (
-                     "StreamList", "The list of streams associated to this protocol.",
-                     ObjectVectorValue (),
-                     MakeObjectVectorAccessor (&QuicL5Protocol::m_streams),
-                     MakeObjectVectorChecker<QuicStreamBase> ());
+    .AddAttribute (
+      "StreamList", "The list of streams associated to this protocol.",
+      ObjectVectorValue (),
+      MakeObjectVectorAccessor (&QuicL5Protocol::m_streams),
+      MakeObjectVectorChecker<QuicStreamBase> ());
   return tid;
 }
 
@@ -283,7 +283,7 @@ QuicL5Protocol::DispatchRecv (Ptr<Packet> data, Address &address)
             {
               NS_LOG_INFO (
                 "Receiving frame on stream " << stream->GetStreamId () <<
-                " trigger stream");
+                  " trigger stream");
               stream->Recv ((*it).first, sub, address);
             }
         }
@@ -291,7 +291,7 @@ QuicL5Protocol::DispatchRecv (Ptr<Packet> data, Address &address)
         {
           NS_LOG_INFO (
             "Receiving frame on stream " << sub.GetStreamId () <<
-            " trigger socket");
+              " trigger socket");
           m_socket->OnReceivedFrame (sub);
         }
     }
@@ -332,7 +332,7 @@ QuicL5Protocol::DisgregateSend (Ptr<Packet> data)
   uint32_t remainingLoad = dataSizeByte - loadPerStream * (m_streams.size () - 1);
   if (loadPerStream < 1)
     {
-	    loadPerStream = 1;
+      loadPerStream = 1;
     }
 
   for (uint32_t start = 0; start < dataSizeByte; start += loadPerStream)
@@ -340,7 +340,7 @@ QuicL5Protocol::DisgregateSend (Ptr<Packet> data)
       if (remainingLoad > 0 && start + remainingLoad == dataSizeByte)
         {
           Ptr<Packet> remainingfragment = data->CreateFragment (
-              start, remainingLoad);
+            start, remainingLoad);
           disgregated.push_back (remainingfragment);
         }
       else
@@ -374,12 +374,12 @@ QuicL5Protocol::DisgregateRecv (Ptr<Packet> data)
       NS_LOG_INFO ("subheader " << sub << " dataSizeByte " << dataSizeByte
                                 << " remaining " << data->GetSize () << " frame size " << sub.GetLength ());
       Ptr<Packet> remainingfragment = data->CreateFragment (0, sub.GetLength ());
-      NS_LOG_INFO("fragment size " << remainingfragment->GetSize());
+      NS_LOG_INFO ("fragment size " << remainingfragment->GetSize ());
 
       // remove the first portion of the packet
       data->RemoveAtStart (sub.GetLength ());
       start += sub.GetSerializedSize () + sub.GetLength ();
-      disgregated.push_back (std::make_pair(remainingfragment, sub));
+      disgregated.push_back (std::make_pair (remainingfragment, sub));
     }
 
 
@@ -463,12 +463,12 @@ QuicL5Protocol::UpdateInitialMaxStreamData (uint32_t newMaxStreamData)
 uint64_t
 QuicL5Protocol::GetMaxData ()
 {
-  NS_LOG_FUNCTION(this);
-  
+  NS_LOG_FUNCTION (this);
+
   uint64_t maxData = 0;
   for (auto stream : m_streams)
     {
-      maxData += stream->SendMaxStreamData();
+      maxData += stream->SendMaxStreamData ();
     }
   return maxData;
 }

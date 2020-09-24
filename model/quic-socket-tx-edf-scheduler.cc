@@ -321,9 +321,12 @@ void QuicSocketTxEdfScheduler::SetLatency (uint32_t streamId, Time latency)
 const Time QuicSocketTxEdfScheduler::GetLatency (uint32_t streamId)
 {
   Time latency = m_defaultLatency;
-  if (m_latencyMap.count (streamId) > 0) {
+  if (m_latencyMap.count (streamId) > 0)
+    {
       latency = m_latencyMap.at (streamId);
-    } else {
+    }
+  else
+    {
       NS_LOG_INFO (
         "Stream " << streamId << " does not have a pre-specified latency, using default");
     }

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2018 NITK Surathkal, 2020 SIGNET Lab, Department of Information 
+ * Copyright (c) 2018 NITK Surathkal, 2020 SIGNET Lab, Department of Information
  * Engineering, University of Padova
  *
  * This program is free software; you can redistribute it and/or modify
@@ -147,7 +147,7 @@ QuicBbr::InitPacingRate (Ptr<QuicSocketState> tcb)
       tcb->m_pacing = true;
     }
   Time rtt = tcb->m_lastRtt != Time::Max () ? tcb->m_lastRtt.Get () : MilliSeconds (1);
-  if (rtt == Time(0))
+  if (rtt == Time (0))
     {
       NS_LOG_INFO ("No rtt estimate is available, using kDefaultInitialRtt=" << tcb->m_kDefaultInitialRtt);
       rtt = tcb->m_kDefaultInitialRtt;

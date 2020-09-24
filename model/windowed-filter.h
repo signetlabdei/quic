@@ -113,8 +113,7 @@ class WindowedFilter
 {
 public:
   WindowedFilter ()
-  {
-  }
+  {}
 
   // |windowLength| is the period after which a best estimate expires.
   // |zeroValue| is used as the uninitialized value for objects of T.
@@ -123,11 +122,12 @@ public:
     : m_windowLength (windowLength),
       m_zeroValue (zeroValue),
       m_samples
-  {
-    Sample (m_zeroValue, zeroTime),
-    Sample (m_zeroValue, zeroTime),
-    Sample (m_zeroValue, zeroTime)
-  } {}
+      {
+       Sample (m_zeroValue, zeroTime),
+       Sample (m_zeroValue, zeroTime),
+       Sample (m_zeroValue, zeroTime)
+      }
+  {}
   // Changes the window length.  Does not update any current samples.
   void SetWindowLength (TimeDeltaT windowLength)
   {
@@ -217,14 +217,12 @@ public:
     T sample;
     TimeT time;
     Sample ()
-    {
-    }
+    {}
 
     Sample (T init_sample, TimeT init_time)
       : sample (init_sample),
         time (init_time)
-    {
-    }
+    {}
   };
 
   TimeDeltaT m_windowLength;    //!< Time length of window.
