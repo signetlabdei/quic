@@ -145,13 +145,13 @@ QuicBbr::InitPacingRate (Ptr<QuicSocketState> tcb)
       tcb->m_pacing = true;
     }
   Time rtt = tcb->m_lastRtt != Time::Max () ? tcb->m_lastRtt.Get () : MilliSeconds (1);
-  if (rtt == 0)
+  if (rtt == Seconds (0))
     {
       NS_LOG_INFO("No rtt estimate is available, using kDefaultInitialRtt=" << tcb->m_kDefaultInitialRtt);
       rtt = tcb->m_kDefaultInitialRtt;
     }
   DataRate nominalBandwidth (tcb->m_initialCWnd * 8 / rtt.GetSeconds ());
-  tcb->m_currentPacingRate = DataRate (m_pacingGain * nominalBandwidth.GetBitRate ());
+  tcb->m_pacingRate = DataRate (m_pacingGain * nominalBandwidth.GetBitRate ());
   
 }
 
@@ -184,9 +184,9 @@ QuicBbr::SetPacingRate (Ptr<QuicSocketState> tcb, double gain)
   NS_LOG_FUNCTION (this << tcb << gain);
   DataRate rate (gain * m_maxBwFilter.GetBest ().GetBitRate ());
   rate = std::min (rate, tcb->m_maxPacingRate);
-  if (m_isPipeFilled || rate > tcb->m_currentPacingRate)
+  if (m_isPipeFilled || rate > tcb->m_pacingRate)
     {
-      tcb->m_currentPacingRate = rate;
+      tcb->m_pacingRate = rate;
     }
 }
 
@@ -414,17 +414,17 @@ QuicBbr::SetSendQuantum (Ptr<QuicSocketState> tcb)
   m_sendQuantum = 1 * tcb->m_segmentSize;
 /*TODO
   Since TSO can't be implemented in ns-3
-  if (tcb->m_currentPacingRate < DataRate ("1.2Mbps"))
+  if (tcb->m_pacingRate < DataRate ("1.2Mbps"))
     {
       m_sendQuantum = 1 * tcb->m_segmentSize;
     }
-  else if (tcb->m_currentPacingRate < DataRate ("24Mbps"))
+  else if (tcb->m_pacingRate < DataRate ("24Mbps"))
     {
       m_sendQuantum  = 2 * tcb->m_segmentSize;
     }
   else
     {
-      m_sendQuantum = std::min (tcb->m_currentPacingRate.GetBitRate () * MilliSeconds (1).GetMilliSeconds () / 8, (uint64_t) 64000);
+      m_sendQuantum = std::min (tcb->m_pacingRate.GetBitRate () * MilliSeconds (1).GetMilliSeconds () / 8, (uint64_t) 64000);
     }*/
 }
 
@@ -615,7 +615,7 @@ QuicBbr::CongestionStateSet (Ptr<TcpSocketState> tcb,
   if (newState == TcpSocketState::CA_OPEN && !m_isInitialized)
     {
       NS_LOG_DEBUG ("CongestionStateSet triggered to CA_OPEN :: " << newState);
-      m_rtProp = tcbd->m_lastRtt.Get () != 0 ? tcbd->m_lastRtt.Get () : Time::Max ();
+      m_rtProp = tcbd->m_lastRtt.Get () != Seconds (0) ? tcbd->m_lastRtt.Get () : Time::Max ();
       m_rtPropStamp = Simulator::Now ();
       m_priorCwnd = tcbd->m_initialCWnd;
       m_targetCWnd = tcbd->m_initialCWnd;

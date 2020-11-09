@@ -497,7 +497,7 @@ QuicSocketBase::QuicSocketBase (void)
   m_quicCongestionControlLegacy = false;
   m_txBuffer->SetQuicSocketState(m_tcb);
 
-  m_tcb->m_currentPacingRate = m_tcb->m_maxPacingRate;
+  m_tcb->m_pacingRate = m_tcb->m_maxPacingRate;
   m_pacingTimer.SetFunction (&QuicSocketBase::NotifyPacingPerformed, this);
 
   /**
@@ -597,7 +597,7 @@ QuicSocketBase::QuicSocketBase (const QuicSocketBase& sock)   // Copy constructo
   m_quicCongestionControlLegacy = sock.m_quicCongestionControlLegacy;
   m_txBuffer->SetQuicSocketState(m_tcb);
 
-  m_tcb->m_currentPacingRate = m_tcb->m_maxPacingRate;
+  m_tcb->m_pacingRate = m_tcb->m_maxPacingRate;
   m_pacingTimer.SetFunction (&QuicSocketBase::NotifyPacingPerformed, this);
 
   /**
@@ -1319,10 +1319,10 @@ QuicSocketBase::SendDataPacket (SequenceNumber32 packetNumber,
       NS_LOG_DEBUG ("Pacing is enabled");
       if (m_pacingTimer.IsExpired ())
         {
-          NS_LOG_DEBUG ("Current Pacing Rate " << m_tcb->m_currentPacingRate);
+          NS_LOG_DEBUG ("Current Pacing Rate " << m_tcb->m_pacingRate);
           NS_LOG_DEBUG ("Pacing Timer is in expired state, activate it. Expires in " << 
-                        m_tcb->m_currentPacingRate.CalculateBytesTxTime (sz));
-          m_pacingTimer.Schedule (m_tcb->m_currentPacingRate.CalculateBytesTxTime (sz));
+                        m_tcb->m_pacingRate.Get ().CalculateBytesTxTime (sz));
+          m_pacingTimer.Schedule (m_tcb->m_pacingRate.Get ().CalculateBytesTxTime (sz));
         }
       else
         {
@@ -1425,7 +1425,7 @@ QuicSocketBase::SetReTxTimeout ()
     {
       NS_LOG_INFO ("Connecting, set alarm");
       // Handshake retransmission alarm.
-      if (m_tcb->m_smoothedRtt == 0)
+      if (m_tcb->m_smoothedRtt == Seconds (0))
         {
           alarmDuration = 2 * m_tcb->m_kDefaultInitialRtt;
         }
@@ -1438,7 +1438,7 @@ QuicSocketBase::SetReTxTimeout ()
       alarmDuration = alarmDuration * (2 ^ m_tcb->m_handshakeCount);
       m_tcb->m_alarmType = 0;
     }
-  else if (m_tcb->m_lossTime != 0)
+  else if (m_tcb->m_lossTime != Seconds (0))
     {
       NS_LOG_INFO ("Early retransmit timer");
       // Early retransmit timer or time loss detection.
@@ -1511,7 +1511,7 @@ QuicSocketBase::ReTxTimeout ()
       //RetransmitAllHandshakePackets();
       m_tcb->m_handshakeCount++;
     }
-  else if (m_tcb->m_alarmType == 1 && m_tcb->m_lossTime != 0)
+  else if (m_tcb->m_alarmType == 1 && m_tcb->m_lossTime != Seconds (0))
     {
       std::vector<QuicSocketTxItem*> lostPackets = m_txBuffer->DetectLostPackets ();
       NS_LOG_INFO ("RTO triggered: early retransmit");
