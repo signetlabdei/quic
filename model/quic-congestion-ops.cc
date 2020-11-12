@@ -156,7 +156,7 @@ QuicCongestionOps::UpdateRtt (Ptr<TcpSocketState> tcb, Time latestRtt,
 
   NS_LOG_LOGIC ("Update smoothed RTT");
   // Based on [RFC6298].
-  if (tcbd->m_smoothedRtt == 0)
+  if (tcbd->m_smoothedRtt == Seconds (0))
     {
       tcbd->m_smoothedRtt = latestRtt;
       tcbd->m_rttVar = latestRtt / 2;
