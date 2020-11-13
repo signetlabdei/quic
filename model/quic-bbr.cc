@@ -1,7 +1,8 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
  * Copyright (c) 2018 NITK Surathkal, 
- * Copyright (c) 2020 SIGNET Lab, Department of Information Engineering, University of Padova
+ * 2020 SIGNET Lab, Department of Information Engineering, 
+ * University of Padova
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -525,6 +526,8 @@ QuicBbr::UpdateBtlBw (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
     }
 }
 
+
+
 void
 QuicBbr::UpdateModelAndState (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
 {
@@ -606,6 +609,16 @@ QuicBbr::CongControl (Ptr<QuicSocketState> tcb, const struct RateSample *rs)
   NS_LOG_FUNCTION (this << tcb << rs);
   UpdateModelAndState (tcb, rs);
   UpdateControlParameters (tcb, rs);
+}
+
+void
+QuicBbr::CongControl (Ptr<TcpSocketState> tcb,
+                      const TcpRateOps::TcpRateConnection &rc,
+                      const TcpRateOps::TcpRateSample &rs)
+{
+    NS_LOG_FUNCTION (this << tcb);
+    NS_UNUSED (rc);
+    NS_UNUSED (rs);
 }
 
 void
