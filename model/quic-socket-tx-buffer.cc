@@ -307,7 +307,7 @@ Ptr<Packet> QuicSocketTxBuffer::NextStream0Sequence (
   Ptr<QuicSocketTxItem> outItem = CreateObject<QuicSocketTxItem> ();
 
   QuicTxPacketList::iterator it = m_streamZeroList.begin ();
-  while (it != m_streamZeroList.end ())
+  if (it != m_streamZeroList.end ())
     {
       Ptr<Packet> currentPacket = (*it)->m_packet;
       outItem->m_packetNumber = seq;
@@ -321,7 +321,6 @@ Ptr<Packet> QuicSocketTxBuffer::NextStream0Sequence (
       --m_numFrameStream0InBuffer;
       Ptr<Packet> toRet = outItem->m_packet;
       return toRet;
-      it++;
     }
   return 0;
 }

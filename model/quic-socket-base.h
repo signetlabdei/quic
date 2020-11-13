@@ -185,6 +185,10 @@ public:
    */
   virtual TypeId GetInstanceTypeId () const;
 
+  /**
+   * \brief Build an object. InitializeScheduling() must be called after construction to instantiate the frame scheduler, or the construction will fail
+   *
+   */
   QuicSocketBase (void);
   QuicSocketBase (const QuicSocketBase&);
 
