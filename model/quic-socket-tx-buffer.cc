@@ -413,7 +413,7 @@ std::vector<Ptr<QuicSocketTxItem> > QuicSocketTxBuffer::OnAckUpdate (
           NS_LOG_LOGIC (
             "Consider packet " << (*sent_it)->m_packetNumber << " (ACK block " << SequenceNumber32 ((*ack_it)) << ")");
           // The packet is in the next gap
-          bool inGap = (gap_it != compGaps.end ())
+          bool inGap = (gap_it < compGaps.end ())
             && ((*sent_it)->m_packetNumber
                 <= SequenceNumber32 ((*gap_it)));
           if (inGap)               // Just for optimization we suppose All is perfectly ordered
@@ -425,7 +425,7 @@ std::vector<Ptr<QuicSocketTxItem> > QuicSocketTxBuffer::OnAckUpdate (
           // The packet is in the current block: ACK it
           NS_LOG_LOGIC ("Packet " << (*sent_it)->m_packetNumber << " ACKed");
           bool notInGap =
-            ((gap_it == compGaps.end ())
+            ((gap_it >= compGaps.end ())
              || ((*sent_it)->m_packetNumber
                  > SequenceNumber32 ((*gap_it))));
 
