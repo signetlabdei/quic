@@ -121,13 +121,15 @@ public:
   // Importantly, |zeroValue| should be an invalid value for a true sample.
   WindowedFilter (TimeDeltaT windowLength, T zeroValue, TimeT zeroTime)
     : m_windowLength (windowLength),
-      m_zeroValue (zeroValue),
-      m_samples
+    m_zeroValue (zeroValue),
+    m_samples
+    {
+     Sample (m_zeroValue, zeroTime),
+     Sample (m_zeroValue, zeroTime),
+     Sample (m_zeroValue, zeroTime)
+    }
   {
-    Sample (m_zeroValue, zeroTime),
-    Sample (m_zeroValue, zeroTime),
-    Sample (m_zeroValue, zeroTime)
-  } {}
+  }
   // Changes the window length.  Does not update any current samples.
   void SetWindowLength (TimeDeltaT windowLength)
   {
@@ -222,7 +224,7 @@ public:
 
     Sample (T init_sample, TimeT init_time)
       : sample (init_sample),
-        time (init_time)
+      time (init_time)
     {
     }
   };

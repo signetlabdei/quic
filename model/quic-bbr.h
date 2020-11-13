@@ -1,6 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2018 NITK Surathkal
+ * Copyright (c) 2018 NITK Surathkal, 2020 SIGNET Lab, Department of
+ * Information Engineering, University of Padova
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -18,6 +19,7 @@
  * Authors: Vivek Jain <jain.vivek.anand@gmail.com>
  *          Viyom Mittal <viyommittal@gmail.com>
  *          Mohit P. Tahiliani <tahiliani@nitk.edu.in>
+ *          Umberto Paro <umberto.paro@me.com>
  */
 
 #pragma once
@@ -75,7 +77,7 @@ public:
                          MaxFilter<DataRate>,
                          uint32_t,
                          uint32_t>
-  MaxBandwidthFilter_t;
+    MaxBandwidthFilter_t;
 
   /**
    * Assign a fixed random variable stream number to the random variables
@@ -93,8 +95,8 @@ public:
 
   virtual void OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, bool isAckOnly);
   virtual void OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
-                      std::vector<QuicSocketTxItem *> newAcks, const struct RateSample *rs);
-  virtual void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem *> lostPackets);
+                              std::vector<Ptr<QuicSocketTxItem> > newAcks, const struct RateSample *rs);
+  virtual void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxItem> > lostPackets);
 
   virtual void CwndEvent (Ptr<TcpSocketState> tcb,
                           const TcpSocketState::TcpCAEvent_t event);
@@ -105,8 +107,7 @@ public:
   virtual Ptr<TcpCongestionOps> Fork ();
 
 protected:
-
-  void OnPacketAcked (Ptr<TcpSocketState> tcb, QuicSocketTxItem &ackedPacket);
+  void OnPacketAcked (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPacket);
   virtual void OnRetransmissionTimeoutVerified (Ptr<TcpSocketState> tcb);
 
 

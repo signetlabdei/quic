@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 /*
 #define NS_LOG_APPEND_CONTEXT \
@@ -56,14 +56,17 @@ QuicStreamBase::GetTypeId (void)
     .AddAttribute ("StreamSndBufSize",
                    "QuicStreamBase maximum transmit buffer size (bytes)",
                    UintegerValue (131072), // 128k
-                   MakeUintegerAccessor (&QuicStreamBase::GetStreamSndBufSize,
-                                         &QuicStreamBase::SetStreamSndBufSize),
+                   MakeUintegerAccessor (&QuicStreamBase::m_streamTxBufferSize),
                    MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("StreamRcvBufSize",
                    "QuicStreamBase maximum receive buffer size (bytes)",
                    UintegerValue (131072), // 128k
-                   MakeUintegerAccessor (&QuicStreamBase::GetStreamRcvBufSize,
-                                         &QuicStreamBase::SetStreamRcvBufSize),
+                   MakeUintegerAccessor (&QuicStreamBase::m_streamRxBufferSize),
+                   MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("MaxDataInterval",
+                   "Interval between MAX_DATA frames",
+                   UintegerValue (15000),                 // 10 packets
+                   MakeUintegerAccessor (&QuicStreamBase::m_maxDataInterval),
                    MakeUintegerChecker<uint32_t> ())
   ;
   return tid;
@@ -76,20 +79,21 @@ QuicStreamBase::GetInstanceTypeId () const
 }
 
 
-QuicStreamBase::QuicStreamBase (void)
+QuicStreamBase::QuicStreamBase (void) // @suppress("Class members should be properly initialized")
   : QuicStream (),
-    m_streamType (NONE),
-    m_streamDirectionType (UNKNOWN),
-    m_streamStateSend (IDLE),
-    m_streamStateRecv (IDLE),
-    m_node (0),
-    m_connectionId (0),
-    m_streamId (0),
-    m_quicl5 (0),
-    m_maxStreamData (0),
-    m_sentSize (0),
-    m_recvSize (0),
-    m_fin (false)
+  m_streamType (NONE),
+  m_streamDirectionType (UNKNOWN),
+  m_streamStateSend (IDLE),
+  m_streamStateRecv (IDLE),
+  m_node (0),
+  m_connectionId (0),
+  m_streamId (0),
+  m_quicl5 (0),
+  m_maxStreamData (0),
+  m_maxAdvertisedData (0),
+  m_sentSize (0),
+  m_recvSize (0),
+  m_fin (false)
 {
   NS_LOG_FUNCTION (this);
   m_rxBuffer = CreateObject<QuicStreamRxBuffer> ();
@@ -106,6 +110,8 @@ QuicStreamBase::SetQuicL5 (Ptr<QuicL5Protocol> quicl5)
 {
   NS_LOG_FUNCTION (this);
   m_quicl5 = quicl5;
+  SetStreamRcvBufSize (m_streamRxBufferSize);
+  SetStreamRcvBufSize (m_streamTxBufferSize);
 }
 
 
@@ -157,9 +163,9 @@ QuicStreamBase::AppendingTx (Ptr<Packet> frame)
 }
 
 uint32_t
-QuicStreamBase::GetStreamTxAvailable() const
+QuicStreamBase::GetStreamTxAvailable () const
 {
-  return m_txBuffer->Available();
+  return m_txBuffer->Available ();
 }
 
 
@@ -246,9 +252,7 @@ QuicStreamBase::SendDataFrame (SequenceNumber32 seq, uint32_t maxSize)
   bool lengthBit = true;
 
   QuicSubheader sub = QuicSubheader::CreateStreamSubHeader (m_streamId, (uint64_t)seq.GetValue (), frame->GetSize (), m_sentSize != 0, lengthBit, m_fin);
-  sub.SetMaxStreamData (m_recvSize + m_rxBuffer->Available ());
   m_sentSize += frame->GetSize ();
-  NS_LOG_DEBUG ("Sending RWND = " << sub.GetMaxStreamData ());
 
   frame->AddHeader (sub);
   int size = m_quicl5->Send (frame);
@@ -429,12 +433,15 @@ QuicStreamBase::Recv (Ptr<Packet> frame, const QuicSubheader& sub, Address &addr
           NS_LOG_INFO ("Received a frame with the correct order of size " << sub.GetLength ());
           m_recvSize += sub.GetLength ();
 
-          QuicSubheader sub;
-          sub.SetMaxStreamData (m_recvSize + m_rxBuffer->Available ());
-          // build empty packet
-          Ptr<Packet> maxStream = Create<Packet> (0);
-          maxStream->AddHeader (sub);
-          m_quicl5->Send (maxStream);
+          if (m_maxAdvertisedData == 0 || m_recvSize + m_rxBuffer->Available () > m_maxAdvertisedData + m_maxDataInterval)
+            {
+              m_maxAdvertisedData = m_recvSize + m_rxBuffer->Available ();
+              QuicSubheader sub = QuicSubheader::CreateMaxData (m_recvSize + m_rxBuffer->Available ());
+              // build empty packet
+              Ptr<Packet> maxStream = Create<Packet> (0);
+              maxStream->AddHeader (sub);
+              m_quicl5->Send (maxStream);
+            }
 
           NS_LOG_LOGIC ("Try to Flush RxBuffer if Available - offset " << m_recvSize);
           // check if the packets in the RX buffer can be released (in order release)
@@ -474,8 +481,8 @@ QuicStreamBase::Recv (Ptr<Packet> frame, const QuicSubheader& sub, Address &addr
               SetMaxStreamData (sub.GetMaxStreamData ());
               NS_LOG_LOGIC ("Received window set to offset " << sub.GetMaxStreamData ());
             }
-          NS_LOG_INFO ("Buffering unordered received frame - offset " << m_recvSize << ", frame offset "<< sub.GetOffset());
-          if (!m_rxBuffer->Add (frame, sub) && frame->GetSize() > 0)
+          NS_LOG_INFO ("Buffering unordered received frame - offset " << m_recvSize << ", frame offset " << sub.GetOffset ());
+          if (!m_rxBuffer->Add (frame, sub) && frame->GetSize () > 0)
             {
               // Insert failed: No data or RX buffer full
               NS_LOG_INFO ("Dropping packet due to full RX buffer");
@@ -568,7 +575,7 @@ QuicStreamBase::SetStreamDirectionType (const QuicStreamDirectionTypes_t& stream
 
 QuicStream::QuicStreamDirectionTypes_t
 QuicStreamBase::GetStreamDirectionType ()
-{  
+{
   return m_streamDirectionType;
 }
 
@@ -582,7 +589,7 @@ QuicStreamBase::SetStreamType (const QuicStreamTypes_t& streamType)
 void
 QuicStreamBase::SetStreamStateSend (const QuicStreamStates_t& streamState)
 {
-  NS_LOG_FUNCTION(this);
+  NS_LOG_FUNCTION (this);
 
   if (m_streamType == SERVER_INITIATED_BIDIRECTIONAL or m_streamType == SERVER_INITIATED_UNIDIRECTIONAL)
     {
@@ -614,7 +621,7 @@ QuicStreamBase::SetStreamStateSendIf (bool condition, const QuicStreamStates_t& 
 void
 QuicStreamBase::SetStreamStateRecv (const QuicStreamStates_t& streamState)
 {
-  NS_LOG_FUNCTION(this);
+  NS_LOG_FUNCTION (this);
 
   if (m_streamType == SERVER_INITIATED_BIDIRECTIONAL or m_streamType == SERVER_INITIATED_UNIDIRECTIONAL)
     {

@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #ifndef QUICSTREAM_H
@@ -178,7 +178,7 @@ public:
    * \param streamId the stream ID
    */
   virtual void SetStreamId (uint64_t streamId) = 0;
-  
+
   /**
    * \brief Get the stream ID
    *

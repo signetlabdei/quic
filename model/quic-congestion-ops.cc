@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2019 SIGNET Lab, Department of Information Engineering, University of Padova
+ * Copyright (c) 2020 SIGNET Lab, Department of Information Engineering, University of Padova
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,7 +19,8 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *          Umberto Paro <umberto.paro@me.com>
+ *
  */
 
 #define __STDC_LIMIT_MACROS
@@ -44,8 +45,8 @@ TypeId
 QuicCongestionOps::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::QuicCongestionControl").SetParent<
-      TcpNewReno> ().SetGroupName ("Internet").AddConstructor<
-      QuicCongestionOps> ();
+    TcpNewReno> ().SetGroupName ("Internet").AddConstructor<
+    QuicCongestionOps> ();
   return tid;
 }
 
@@ -63,8 +64,7 @@ QuicCongestionOps::QuicCongestionOps (
 }
 
 QuicCongestionOps::~QuicCongestionOps (void)
-{
-}
+{}
 
 std::string
 QuicCongestionOps::GetName () const
@@ -82,8 +82,8 @@ QuicCongestionOps::Fork ()
 
 void
 QuicCongestionOps::OnPacketSent (Ptr<TcpSocketState> tcb,
-                                     SequenceNumber32 packetNumber,
-                                     bool isAckOnly)
+                                 SequenceNumber32 packetNumber,
+                                 bool isAckOnly)
 {
   NS_LOG_FUNCTION (this << packetNumber << isAckOnly);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
@@ -95,21 +95,21 @@ QuicCongestionOps::OnPacketSent (Ptr<TcpSocketState> tcb,
 
 void
 QuicCongestionOps::OnAckReceived (Ptr<TcpSocketState> tcb,
-                                      QuicSubheader &ack,
-                                      std::vector<QuicSocketTxItem*> newAcks,
-                                      const struct RateSample *rs)
+                                  QuicSubheader &ack,
+                                  std::vector<Ptr<QuicSocketTxItem> > newAcks,
+                                  const struct RateSample *rs)
 {
   NS_LOG_FUNCTION (this);
-  NS_UNUSED(rs);
+  NS_UNUSED (rs);
 
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
   NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
 
   tcbd->m_largestAckedPacket = SequenceNumber32 (
-      ack.GetLargestAcknowledged ());
-  
+    ack.GetLargestAcknowledged ());
+
   // newAcks are ordered from the highest packet number to the smalles
-  QuicSocketTxItem* lastAcked = newAcks.at (0);
+  Ptr<QuicSocketTxItem> lastAcked = newAcks.at (0);
 
   NS_LOG_LOGIC ("Updating RTT estimate");
   // If the largest acked is newly acked, update the RTT.
@@ -125,14 +125,14 @@ QuicCongestionOps::OnAckReceived (Ptr<TcpSocketState> tcb,
     {
       if ((*it)->m_acked)
         {
-          OnPacketAcked (tcb, (**it));
+          OnPacketAcked (tcb, (*it));
         }
     }
 }
 
 void
 QuicCongestionOps::UpdateRtt (Ptr<TcpSocketState> tcb, Time latestRtt,
-                                  Time ackDelay)
+                              Time ackDelay)
 {
   NS_LOG_FUNCTION (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
@@ -164,7 +164,7 @@ QuicCongestionOps::UpdateRtt (Ptr<TcpSocketState> tcb, Time latestRtt,
   else
     {
       Time rttVarSample = Time (
-          std::abs ((tcbd->m_smoothedRtt - latestRtt).GetDouble ()));
+        std::abs ((tcbd->m_smoothedRtt - latestRtt).GetDouble ()));
       tcbd->m_rttVar = 3 / 4 * tcbd->m_rttVar + 1 / 4 * rttVarSample;
       tcbd->m_smoothedRtt = 7 / 8 * tcbd->m_smoothedRtt + 1 / 8 * latestRtt;
     }
@@ -173,7 +173,7 @@ QuicCongestionOps::UpdateRtt (Ptr<TcpSocketState> tcb, Time latestRtt,
 
 void
 QuicCongestionOps::OnPacketAcked (Ptr<TcpSocketState> tcb,
-                                      QuicSocketTxItem &ackedPacket)
+                                  Ptr<QuicSocketTxItem> ackedPacket)
 {
   NS_LOG_FUNCTION (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
@@ -184,7 +184,7 @@ QuicCongestionOps::OnPacketAcked (Ptr<TcpSocketState> tcb,
   NS_LOG_LOGIC ("Handle possible RTO");
   // If a packet sent prior to RTO was acked, then the RTO  was spurious. Otherwise, inform congestion control.
   if (tcbd->m_rtoCount > 0
-      and ackedPacket.m_packetNumber > tcbd->m_largestSentBeforeRto)
+      and ackedPacket->m_packetNumber > tcbd->m_largestSentBeforeRto)
     {
       OnRetransmissionTimeoutVerified (tcb);
     }
@@ -195,7 +195,7 @@ QuicCongestionOps::OnPacketAcked (Ptr<TcpSocketState> tcb,
 
 bool
 QuicCongestionOps::InRecovery (Ptr<TcpSocketState> tcb,
-                                   SequenceNumber32 packetNumber)
+                               SequenceNumber32 packetNumber)
 {
   NS_LOG_FUNCTION (this << packetNumber.GetValue ());
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
@@ -206,14 +206,14 @@ QuicCongestionOps::InRecovery (Ptr<TcpSocketState> tcb,
 
 void
 QuicCongestionOps::OnPacketAckedCC (Ptr<TcpSocketState> tcb,
-                                        QuicSocketTxItem & ackedPacket)
+                                    Ptr<QuicSocketTxItem> ackedPacket)
 {
   NS_LOG_FUNCTION (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
   NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
 
   NS_LOG_INFO ("Updating congestion window");
-  if (InRecovery (tcb, ackedPacket.m_packetNumber))
+  if (InRecovery (tcb, ackedPacket->m_packetNumber))
     {
       NS_LOG_LOGIC ("In recovery");
       // Do not increase congestion window in recovery period.
@@ -223,20 +223,20 @@ QuicCongestionOps::OnPacketAckedCC (Ptr<TcpSocketState> tcb,
     {
       NS_LOG_LOGIC ("In slow start");
       // Slow start.
-      tcbd->m_cWnd += ackedPacket.m_packet->GetSize ();
+      tcbd->m_cWnd += ackedPacket->m_packet->GetSize ();
     }
   else
     {
       NS_LOG_LOGIC ("In congestion avoidance");
       // Congestion Avoidance.
-      tcbd->m_cWnd += tcbd->m_segmentSize * ackedPacket.m_packet->GetSize ()
+      tcbd->m_cWnd += tcbd->m_segmentSize * ackedPacket->m_packet->GetSize ()
         / tcbd->m_cWnd;
     }
 }
 
 void
 QuicCongestionOps::OnPacketsLost (
-  Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem*> lostPackets)
+  Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxItem> > lostPackets)
 {
   NS_LOG_LOGIC (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));

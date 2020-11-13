@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #ifndef QUICSOCKETFACTORY_H
@@ -72,6 +72,7 @@ public:
 
 protected:
   virtual void DoDispose (void);
+
 private:
   Ptr<QuicL4Protocol> m_quicl4;                 //!< The associated QUIC L4 protocol
   std::vector<Ptr<QuicSocketBase> > m_sockets;  //!< The list of QuicSocketBase

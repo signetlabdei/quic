@@ -1,6 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2018 NITK Surathkal
+ * Copyright (c) 2018 NITK Surathkal, 2020 SIGNET Lab, Department of Information
+ * Engineering, University of Padova
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -18,6 +19,7 @@
  * Authors: Vivek Jain <jain.vivek.anand@gmail.com>
  *          Viyom Mittal <viyommittal@gmail.com>
  *          Mohit P. Tahiliani <tahiliani@nitk.edu.in>
+ *          Umberto Paro <umberto.paro@me.com>
  */
 
 #include "quic-bbr.h"
@@ -147,12 +149,12 @@ QuicBbr::InitPacingRate (Ptr<QuicSocketState> tcb)
   Time rtt = tcb->m_lastRtt != Time::Max () ? tcb->m_lastRtt.Get () : MilliSeconds (1);
   if (rtt == Seconds (0))
     {
-      NS_LOG_INFO("No rtt estimate is available, using kDefaultInitialRtt=" << tcb->m_kDefaultInitialRtt);
+      NS_LOG_INFO ("No rtt estimate is available, using kDefaultInitialRtt=" << tcb->m_kDefaultInitialRtt);
       rtt = tcb->m_kDefaultInitialRtt;
     }
   DataRate nominalBandwidth (tcb->m_initialCWnd * 8 / rtt.GetSeconds ());
   tcb->m_pacingRate = DataRate (m_pacingGain * nominalBandwidth.GetBitRate ());
-  
+
 }
 
 void
@@ -361,7 +363,7 @@ void
 QuicBbr::HandleProbeRTT (Ptr<QuicSocketState> tcb)
 {
   NS_LOG_FUNCTION (this << tcb);
-  
+
   tcb->m_appLimitedUntil = (tcb->m_delivered + tcb->m_bytesInFlight.Get ()) ?: 1;
 
   if (m_probeRttDoneStamp == Seconds (0) && tcb->m_bytesInFlight <= m_minPipeCwnd)
@@ -549,16 +551,18 @@ QuicBbr::WhichState (BbrMode_t mode) const
 {
   switch (mode)
     {
-    case 0:
-      return "BBR_STARTUP";
-    case 1:
-      return "BBR_DRAIN";
-    case 2:
-      return "BBR_PROBE_BW";
-    case 3:
-      return "BBR_PROBE_RTT";
+      case 0:
+        return "BBR_STARTUP";
+      case 1:
+        return "BBR_DRAIN";
+      case 2:
+        return "BBR_PROBE_BW";
+      case 3:
+        return "BBR_PROBE_RTT";
+      default:
+        NS_ABORT_MSG ("Invalid BBR state");
+        return "";
     }
-  NS_ASSERT (false);
 }
 
 void
@@ -606,7 +610,7 @@ QuicBbr::CongControl (Ptr<QuicSocketState> tcb, const struct RateSample *rs)
 
 void
 QuicBbr::CongestionStateSet (Ptr<TcpSocketState> tcb,
-                            const TcpSocketState::TcpCongState_t newState)
+                             const TcpSocketState::TcpCongState_t newState)
 {
   NS_LOG_FUNCTION (this << tcb << newState);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState *> (&(*tcb));
@@ -648,7 +652,7 @@ QuicBbr::CongestionStateSet (Ptr<TcpSocketState> tcb,
 
 void
 QuicBbr::CwndEvent (Ptr<TcpSocketState> tcb,
-                   const TcpSocketState::TcpCAEvent_t event)
+                    const TcpSocketState::TcpCAEvent_t event)
 {
   NS_LOG_FUNCTION (this << tcb << event);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState *> (&(*tcb));
@@ -687,9 +691,10 @@ QuicBbr::GetSsThresh (Ptr<const TcpSocketState> tcb, uint32_t bytesInFlight)
 }
 
 void
-QuicBbr::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked) {
-  NS_UNUSED(tcb);
-  NS_UNUSED(segmentsAcked);
+QuicBbr::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
+{
+  NS_UNUSED (tcb);
+  NS_UNUSED (segmentsAcked);
 }
 
 void
@@ -705,8 +710,8 @@ QuicBbr::OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, b
 
 void
 QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
-                    std::vector<QuicSocketTxItem *> newAcks,
-                    const struct RateSample *rs)
+                        std::vector<Ptr<QuicSocketTxItem> > newAcks,
+                        const struct RateSample *rs)
 {
   NS_LOG_FUNCTION (this);
 
@@ -716,7 +721,7 @@ QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
   tcbd->m_largestAckedPacket = SequenceNumber32 (ack.GetLargestAcknowledged ());
 
   // newAcks are ordered from the highest packet number to the smalles
-  QuicSocketTxItem *lastAcked = newAcks.at (0);
+  Ptr<QuicSocketTxItem> lastAcked = newAcks.at (0);
 
   NS_LOG_LOGIC ("Updating RTT estimate");
   // If the largest acked is newly acked, update the RTT.
@@ -727,7 +732,9 @@ QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
     }
 
   // Precess end of recovery
-  if (tcbd->m_endOfRecovery <= tcbd->m_largestAckedPacket)
+  if ((tcbd->m_congState == TcpSocketState::CA_RECOVERY or
+       tcbd->m_congState == TcpSocketState::CA_LOSS) and
+      tcbd->m_endOfRecovery <= tcbd->m_largestAckedPacket)
     {
       tcbd->m_congState = TcpSocketState::CA_OPEN;
       CongestionStateSet (tcb, TcpSocketState::CA_OPEN);
@@ -740,14 +747,14 @@ QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
     {
       if ((*it)->m_acked)
         {
-          OnPacketAcked (tcb, (**it));
+          OnPacketAcked (tcb, (*it));
         }
     }
   CongControl (tcbd, rs);
 }
 
 void
-QuicBbr::OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem *> lostPackets)
+QuicBbr::OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxItem> > lostPackets)
 {
   NS_LOG_LOGIC (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState *> (&(*tcb));
@@ -767,7 +774,7 @@ QuicBbr::OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem *>
 }
 
 void
-QuicBbr::OnPacketAcked (Ptr<TcpSocketState> tcb, QuicSocketTxItem &ackedPacket)
+QuicBbr::OnPacketAcked (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPacket)
 {
   NS_LOG_FUNCTION (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
@@ -776,7 +783,7 @@ QuicBbr::OnPacketAcked (Ptr<TcpSocketState> tcb, QuicSocketTxItem &ackedPacket)
   NS_LOG_LOGIC ("Handle possible RTO");
   // If a packet sent prior to RTO was acked, then the RTO  was spurious. Otherwise, inform congestion control.
   if (tcbd->m_rtoCount > 0
-      and ackedPacket.m_packetNumber > tcbd->m_largestSentBeforeRto)
+      and ackedPacket->m_packetNumber > tcbd->m_largestSentBeforeRto)
     {
       OnRetransmissionTimeoutVerified (tcb);
     }

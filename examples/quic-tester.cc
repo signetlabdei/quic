@@ -44,7 +44,7 @@ main (int argc, char *argv[])
   std::cout
       << "\n\n#################### SIMULATION SET-UP ####################\n\n\n";
 
-  LogLevel log_precision = LOG_LEVEL_INFO;
+  LogLevel log_precision = LOG_LEVEL_LOGIC;
   Time::SetResolution (Time::NS);
   LogComponentEnableAll (LOG_PREFIX_TIME);
   LogComponentEnableAll (LOG_PREFIX_FUNC);
@@ -52,7 +52,7 @@ main (int argc, char *argv[])
   LogComponentEnable ("QuicEchoClientApplication", log_precision);
   LogComponentEnable ("QuicEchoServerApplication", log_precision);
 //  LogComponentEnable ("QuicHeader", log_precision);
-  LogComponentEnable ("QuicSocketBase", log_precision);
+  //LogComponentEnable ("QuicSocketBase", log_precision);
 //  LogComponentEnable ("QuicStreamBase", LOG_LEVEL_LOGIC);
 //  LogComponentEnable ("Socket", log_precision);
 //  LogComponentEnable ("Application", log_precision);
@@ -66,7 +66,7 @@ main (int argc, char *argv[])
 //  //LogComponentEnable ("ObjectBase", log_precision);
 //
 //  LogComponentEnable ("QuicEchoHelper", log_precision);
-//  LogComponentEnable ("QuicSocketTxBuffer", log_precision);
+    LogComponentEnable ("QuicSocketTxScheduler", log_precision);
 //  LogComponentEnable ("QuicSocketRxBuffer", log_precision);
 //  LogComponentEnable ("QuicHeader", log_precision);
 //  LogComponentEnable ("QuicSubheader", log_precision);

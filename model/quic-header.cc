@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #include <stdint.h>
@@ -37,12 +37,12 @@ NS_OBJECT_ENSURE_REGISTERED (QuicHeader);
 
 QuicHeader::QuicHeader ()
   : m_form (SHORT),
-    m_c (false),
-    m_k (PHASE_ZERO),
-    m_type (0),
-    m_connectionId (0),
-    m_packetNumber (0),
-    m_version (0)
+  m_c (false),
+  m_k (PHASE_ZERO),
+  m_type (0),
+  m_connectionId (0),
+  m_packetNumber (0),
+  m_version (0)
 {
 }
 
@@ -545,14 +545,14 @@ bool
 operator== (const QuicHeader &lhs, const QuicHeader &rhs)
 {
   return (
-           lhs.m_form == rhs.m_form
-           && lhs.m_c == rhs.m_c
-           && lhs.m_k  == rhs.m_k
-           && lhs.m_type == rhs.m_type
-           && lhs.m_connectionId == rhs.m_connectionId
-           && lhs.m_packetNumber == rhs.m_packetNumber
-           && lhs.m_version == rhs.m_version
-           );
+    lhs.m_form == rhs.m_form
+    && lhs.m_c == rhs.m_c
+    && lhs.m_k  == rhs.m_k
+    && lhs.m_type == rhs.m_type
+    && lhs.m_connectionId == rhs.m_connectionId
+    && lhs.m_packetNumber == rhs.m_packetNumber
+    && lhs.m_version == rhs.m_version
+    );
 }
 
 std::ostream&

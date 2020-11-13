@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #define __STDC_LIMIT_MACROS
@@ -57,14 +57,14 @@ QuicSocket::GetTypeId (void)
 
 QuicSocket::QuicSocket ()
   : Socket (),
-    m_socketType (NONE)
+  m_socketType (NONE)
 {
   NS_LOG_FUNCTION_NOARGS ();
 }
 
 QuicSocket::QuicSocket (const QuicSocket& sock)
   : Socket (sock),
-    m_socketType (sock.m_socketType)
+  m_socketType (sock.m_socketType)
 {
   NS_LOG_FUNCTION_NOARGS ();
 }

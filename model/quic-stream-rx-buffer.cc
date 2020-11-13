@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #include "ns3/packet.h"
@@ -42,15 +42,15 @@ NS_LOG_COMPONENT_DEFINE ("QuicStreamRxBuffer");
 
 QuicStreamRxItem::QuicStreamRxItem ()
   : m_packet (0),
-    m_offset (0),
-    m_fin (false)
+  m_offset (0),
+  m_fin (false)
 {
 }
 
 QuicStreamRxItem::QuicStreamRxItem (const QuicStreamRxItem &other)
   : m_packet (other.m_packet),
-    m_offset (other.m_offset),
-    m_fin (other.m_fin)
+  m_offset (other.m_offset),
+  m_fin (other.m_fin)
 {
 }
 
@@ -79,10 +79,10 @@ QuicStreamRxBuffer::GetTypeId (void)
 
 QuicStreamRxBuffer::QuicStreamRxBuffer ()
   : m_numBytesInBuffer (0),
-    m_finalSize (0),
-    m_maxBuffer (131072),
-    m_recvFin (
-      false)
+  m_finalSize (0),
+  m_maxBuffer (131072),
+  m_recvFin (
+    false)
 {
   m_streamRecvList = QuicStreamRxPacketList ();
 }
