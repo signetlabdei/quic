@@ -29,11 +29,14 @@ jobs:
       with:
        path: 'src/quic' 
     
-    - name: check that millicar is correctly installed
+    - name: check that quic is correctly installed
       run: ls src/ | grep quic
 
-    - name: enable only millicar
+    - name: enable only quic
       run: printf "#! /usr/bin/env python \n modules_enabled = ['quic', 'applications']" > .ns3rc
       
     - name: build and run the tests
       run: ./waf configure --enable-examples --enable-tests && ./waf build && ./test.py
+      
+    - name: build and run the tests with optimized build
+      run: ./waf configure --enable-examples --enable-tests --build-profile=optimized && ./waf build && ./test.py
