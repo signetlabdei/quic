@@ -525,6 +525,8 @@ QuicBbr::UpdateBtlBw (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
     }
 }
 
+
+
 void
 QuicBbr::UpdateModelAndState (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
 {
@@ -606,6 +608,16 @@ QuicBbr::CongControl (Ptr<QuicSocketState> tcb, const struct RateSample *rs)
   NS_LOG_FUNCTION (this << tcb << rs);
   UpdateModelAndState (tcb, rs);
   UpdateControlParameters (tcb, rs);
+}
+
+void
+QuicBbr::CongControl (Ptr<TcpSocketState> tcb,
+                      const TcpRateOps::TcpRateConnection &rc,
+                      const TcpRateOps::TcpRateSample &rs)
+{
+    NS_LOG_FUNCTION (this << tcb);
+    NS_UNUSED (rc);
+    NS_UNUSED (rs);
 }
 
 void
