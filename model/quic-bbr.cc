@@ -1,8 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
  * Copyright (c) 2018 NITK Surathkal, 
- * 2020 SIGNET Lab, Department of Information Engineering, 
- * University of Padova
+ * Copyright (c) 2020 SIGNET Lab, Department of Information Engineering, University of Padova
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
