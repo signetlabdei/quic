@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #ifndef QUICSOCKET_H
@@ -128,10 +128,8 @@ public:
    */
   bool CheckVersionNegotiation (uint32_t version);
 
-
 protected:
   QuicSocketTypes_t m_socketType;  //!< Quic Socket type
-
 
 private:
   // Indirect the attribute setting and getting through private virtual methods

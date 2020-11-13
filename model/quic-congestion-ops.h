@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2019 SIGNET Lab, Department of Information Engineering, University of Padova
+ * Copyright (c) 2020 SIGNET Lab, Department of Information Engineering, University of Padova
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,7 +19,8 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *          Umberto Paro <umberto.paro@me.com>
+ *
  */
 
 #ifndef QUICCONGESTIONOPS_H
@@ -47,12 +48,12 @@ namespace ns3 {
  *
  * \brief Congestion control abstract class
  *
- * The congestion control is splitted from the main socket code, and it is a 
+ * The congestion control is splitted from the main socket code, and it is a
  * pluggable component. An interface has been defined; variables are maintained
- * in the QuicSocketState class, while subclasses of QuicCongestionOps operate 
+ * in the QuicSocketState class, while subclasses of QuicCongestionOps operate
  * over an instance of that class.
  *
- * The design extends TcpNewReno to provide compatibility with the TCP congestion 
+ * The design extends TcpNewReno to provide compatibility with the TCP congestion
  * control implementations, as well as the possibility of extending it with new
  * QUIC-related capabilities.
  *
@@ -60,7 +61,6 @@ namespace ns3 {
 class QuicCongestionOps : public TcpNewReno
 {
 public:
-
   /**
    * \brief Get the type ID.
    * \return the object TypeId
@@ -86,7 +86,7 @@ public:
   Ptr<TcpCongestionOps> Fork ();
 
   // QuicCongestionControl Draft10
-  
+
   /**
    * \brief Method called when a packet is sent. It updates the quantities in the tcb
    *
@@ -97,7 +97,7 @@ public:
   virtual void OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, bool isAckOnly);
 
   /**
-   * \brief Method called when an ack is received. It process the received ack and updates 
+   * \brief Method called when an ack is received. It process the received ack and updates
    *   the quantities in the tcb.
    *
    * \param tcb a smart pointer to the SocketState (it accepts a QuicSocketState)
@@ -105,17 +105,17 @@ public:
    * \param newAcks the newly acked packets
    * \param rs the connection RateSample
    */
-  virtual void OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack, std::vector<QuicSocketTxItem*> newAcks,
-                      const struct RateSample *rs);
+  virtual void OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack, std::vector<Ptr<QuicSocketTxItem> > newAcks,
+                              const struct RateSample *rs);
 
   /**
-   * \brief Method called when a packet is lost. It process the lost packets and updates 
+   * \brief Method called when a packet is lost. It process the lost packets and updates
    *   the quantities in the tcb.
    *
    * \param tcb a smart pointer to the SocketState (it accepts a QuicSocketState)
    * \param lostPackets the lost packets
    */
-  virtual void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<QuicSocketTxItem*> lostPackets);
+  virtual void OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxItem> > lostPackets);
 
 protected:
   // QuicCongestionControl Draft10
@@ -130,13 +130,13 @@ protected:
   void UpdateRtt (Ptr<TcpSocketState> tcb, Time latestRtt, Time ackDelay);
 
   /**
-   * \brief Method called when a packet is acked. It process the acked packet and updates 
+   * \brief Method called when a packet is acked. It process the acked packet and updates
    *   the quantities in the tcb.
    *
    * \param tcb a smart pointer to the SocketState (it accepts a QuicSocketState)
    * \param ackedPacked the acked packet
    */
-  virtual void OnPacketAcked (Ptr<TcpSocketState> tcb, QuicSocketTxItem &ackedPacket);
+  virtual void OnPacketAcked (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPacket);
 
   /**
    * \brief Check if in recovery period
@@ -153,7 +153,7 @@ protected:
    * \param tcb a smart pointer to the SocketState (it accepts a QuicSocketState)
    * \param ackedPacked the acked packet
    */
-  void OnPacketAckedCC (Ptr<TcpSocketState> tcb, QuicSocketTxItem & ackedPacket);
+  void OnPacketAckedCC (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPacket);
 
   /**
    * \brief Method called when retransmission timeout fires. It updates the quantities in the tcb.

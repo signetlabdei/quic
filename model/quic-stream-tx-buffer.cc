@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #include <algorithm>
@@ -44,8 +44,7 @@ QuicStreamTxItem::QuicStreamTxItem ()
     m_sacked (false),
     m_lastSent (Time::Min ()),
     m_id (0)
-{
-}
+{}
 
 QuicStreamTxItem::QuicStreamTxItem (const QuicStreamTxItem &other)
   : m_packetNumberSequence (other.m_packetNumberSequence),
@@ -55,8 +54,10 @@ QuicStreamTxItem::QuicStreamTxItem (const QuicStreamTxItem &other)
     m_sacked (other.m_sacked),
     m_lastSent (other.m_lastSent),
     m_id (other.m_id)
-{
-}
+{}
+
+QuicStreamTxItem::~QuicStreamTxItem ()
+{}
 
 void
 QuicStreamTxItem::Print (std::ostream &os) const
@@ -105,23 +106,7 @@ QuicStreamTxBuffer::QuicStreamTxBuffer ()
 }
 
 QuicStreamTxBuffer::~QuicStreamTxBuffer (void)
-{
-  QuicTxPacketList::iterator it;
-
-  for (it = m_sentList.begin (); it != m_sentList.end (); ++it)
-    {
-      QuicStreamTxItem *item = *it;
-      m_sentSize -= item->m_packet->GetSize ();
-      delete item;
-    }
-
-  for (it = m_appList.begin (); it != m_appList.end (); ++it)
-    {
-      QuicStreamTxItem *item = *it;
-      m_appSize -= item->m_packet->GetSize ();
-      delete item;
-    }
-}
+{}
 
 void
 QuicStreamTxBuffer::Print (std::ostream & os) const
@@ -142,11 +127,11 @@ QuicStreamTxBuffer::Print (std::ostream & os) const
     }
 
   os << "App list: \n" << as.str () <<
-  "\n\nSent list: \n" << ss.str () <<
-  "\n\nCurrent Status: " <<
-  "\nNumber of transmissions = " << m_sentList.size () <<
-  "\nApplication Size = " << m_appSize <<
-  "\nSent Size = " << m_sentSize;
+    "\n\nSent list: \n" << ss.str () <<
+    "\n\nCurrent Status: " <<
+    "\nNumber of transmissions = " << m_sentList.size () <<
+    "\nApplication Size = " << m_appSize <<
+    "\nSent Size = " << m_sentSize;
 }
 
 bool
@@ -159,8 +144,8 @@ QuicStreamTxBuffer::Add (Ptr<Packet> p)
     {
       if (p->GetSize () > 0)
         {
-          QuicStreamTxItem *item = new QuicStreamTxItem ();
-          item->m_packet = p->Copy ();
+          Ptr<QuicStreamTxItem> item = CreateObject<QuicStreamTxItem> ();
+          item->m_packet = p;
           m_appList.insert (m_appList.end (), item);
           m_appSize += p->GetSize ();
 
@@ -190,8 +175,8 @@ QuicStreamTxBuffer::Rejected (Ptr<Packet> p)
     {
       if (p->GetSize () > 0)
         {
-          QuicStreamTxItem *item = new QuicStreamTxItem ();
-          item->m_packet = p->Copy ();
+          Ptr<QuicStreamTxItem> item = CreateObject<QuicStreamTxItem> ();
+          item->m_packet = p;
           m_appList.insert (m_appList.begin (), item);
           m_appSize += p->GetSize ();
           m_sentList.pop_back ();
@@ -217,7 +202,7 @@ QuicStreamTxBuffer::NextSequence (uint32_t numBytes, const SequenceNumber32 seq)
 {
   NS_LOG_FUNCTION (this << numBytes << seq);
 
-  QuicStreamTxItem* outItem = GetNewSegment (numBytes);
+  Ptr<QuicStreamTxItem> outItem = GetNewSegment (numBytes);
 
   if (outItem != nullptr)
     {
@@ -233,15 +218,15 @@ QuicStreamTxBuffer::NextSequence (uint32_t numBytes, const SequenceNumber32 seq)
 
 }
 
-QuicStreamTxItem*
+Ptr<QuicStreamTxItem>
 QuicStreamTxBuffer::GetNewSegment (uint32_t numBytes)
 {
   NS_LOG_FUNCTION (this << numBytes);
 
   bool toInsert = false;
   Ptr<Packet> currentPacket = 0;
-  QuicStreamTxItem *currentItem = 0;
-  QuicStreamTxItem *outItem = new QuicStreamTxItem ();
+  Ptr<QuicStreamTxItem> currentItem = 0;
+  Ptr<QuicStreamTxItem> outItem = CreateObject<QuicStreamTxItem> ();
   outItem->m_packet = Create<Packet> ();
   uint32_t outItemSize = 0;
   QuicTxPacketList::iterator it = m_appList.begin ();
@@ -270,30 +255,28 @@ QuicStreamTxBuffer::GetNewSegment (uint32_t numBytes)
           m_appList.erase (it);
           m_appSize -= currentItem->m_packet->GetSize ();
 
-          delete currentItem;
-
           it = m_appList.begin (); // Restart to find other possible merges
           continue;
         }
       else
-      {
-    	  // The packet is too large, split it
-    	  uint32_t split = numBytes - outItemSize;
+        {
+          // The packet is too large, split it
+          uint32_t split = numBytes - outItemSize;
 
-        QuicStreamTxItem *toBeBuffered = new QuicStreamTxItem ();
-    	  SplitItems(*currentItem, *toBeBuffered, split);
+          Ptr<QuicStreamTxItem> toBeBuffered = CreateObject<QuicStreamTxItem> ();
+          SplitItems (*currentItem, *toBeBuffered, split);
 
-    	  // Add left part of the split to subframe
-        NS_LOG_LOGIC ("Add incomplete subframe to the outItem");
-        MergeItems (*outItem, *currentItem);
-        outItemSize += currentItem->m_packet->GetSize ();
+          // Add left part of the split to subframe
+          NS_LOG_LOGIC ("Add incomplete subframe to the outItem");
+          MergeItems (*outItem, *currentItem);
+          outItemSize += currentItem->m_packet->GetSize ();
 
-        m_appList.erase (it);
-        m_appSize -= currentItem->m_packet->GetSize ();
+          m_appList.erase (it);
+          m_appSize -= currentItem->m_packet->GetSize ();
 
-        m_appList.push_front (toBeBuffered);
+          m_appList.push_front (toBeBuffered);
 
-      }
+        }
 
       it++;
     }
@@ -333,7 +316,7 @@ QuicStreamTxBuffer::OnAckUpdate (const uint64_t largestAcknowledged, const std::
               break;
             }
 
-          if ((*sent_it)->m_packetNumberSequence <= (SequenceNumber32)(*ack_it)and (*sent_it)->m_packetNumberSequence > (SequenceNumber32)(*gap_it)and (*sent_it)->m_sacked == false)
+          if ((*sent_it)->m_packetNumberSequence <= (SequenceNumber32)(*ack_it) and (*sent_it)->m_packetNumberSequence > (SequenceNumber32)(*gap_it) and (*sent_it)->m_sacked == false)
             {
               NS_LOG_LOGIC ("Acked packet " << (*sent_it)->m_packetNumberSequence);
               (*sent_it)->m_sacked = true;
@@ -377,7 +360,7 @@ QuicStreamTxBuffer::MergeItems (QuicStreamTxItem &t1, QuicStreamTxItem &t2) cons
 void
 QuicStreamTxBuffer::SplitItems (QuicStreamTxItem &t1, QuicStreamTxItem &t2, uint32_t size) const
 {
-  uint32_t initialSize = t1.m_packet->GetSize();
+  uint32_t initialSize = t1.m_packet->GetSize ();
 
   t2.m_sacked = t1.m_sacked;
   t2.m_retrans = t1.m_retrans;
@@ -392,14 +375,14 @@ QuicStreamTxBuffer::SplitItems (QuicStreamTxItem &t1, QuicStreamTxItem &t2, uint
       t1.m_lost = true;
     }
   // Copy the packet into t2
-  t2.m_packet = t1.m_packet->Copy();
+  t2.m_packet = t1.m_packet->Copy ();
   // Remove the first size bytes from t2
-  t2.m_packet->RemoveAtStart(size);
+  t2.m_packet->RemoveAtStart (size);
 
   NS_ASSERT_MSG (t2.m_packet->GetSize () == initialSize - size,
                  "Wrong size " << t2.m_packet->GetSize ());
   // Remove the bytes from size to end from t1
-  t1.m_packet->RemoveAtEnd(t1.m_packet->GetSize() - size);
+  t1.m_packet->RemoveAtEnd (t1.m_packet->GetSize () - size);
   NS_ASSERT_MSG (t1.m_packet->GetSize () == size,
                  "Wrong size " << t1.m_packet->GetSize ());
 }

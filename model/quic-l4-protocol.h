@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #ifndef QUICL4PROTOCOL_H
@@ -52,11 +52,11 @@ class QuicUdpBinding : public Object
 {
 public:
   QuicUdpBinding ();
-  ~QuicUdpBinding();
+  ~QuicUdpBinding ();
 
   static TypeId GetTypeId (void);
   TypeId GetInstanceTypeId (void) const;
-  
+
   Ptr<Socket> m_budpSocket;          //!< The UDP socket this binding is associated with
   Ptr<Socket> m_budpSocket6;         //!< The IPv6 UDP this binding is associated with
   Ptr<QuicSocketBase> m_quicSocket;  //!< The quic socket associated with this binding
@@ -78,7 +78,7 @@ public:
  * packets from UDP, and forwards them up to the right socket. Multiplexing
  * is done through the SendPacket function, which sends the packet down the stack.
  *
- * Moreover, this class SHOULD manage the connection authentication among the 
+ * Moreover, this class SHOULD manage the connection authentication among the
  * peers by checking the packets it receives from the UDP layer going down
  * the stack.
  *
@@ -89,7 +89,6 @@ public:
 class QuicL4Protocol : public IpL4Protocol
 {
 public:
-
   /**
    * \brief Get the type ID.
    * \return the object TypeId
@@ -303,20 +302,20 @@ public:
    * \brief Allocate an IPv4 Endpoint
    * \return the Endpoint
    */
-  Ipv4EndPoint *Allocate (void);
+  Ipv4EndPoint * Allocate (void);
   /**
    * \brief Allocate an IPv4 Endpoint
    * \param address address to use
    * \return the Endpoint
    */
-  Ipv4EndPoint *Allocate (Ipv4Address address);
+  Ipv4EndPoint * Allocate (Ipv4Address address);
   /**
    * \brief Allocate an IPv4 Endpoint
    * \param boundNetDevice Bound NetDevice (if any)
    * \param port port to use
    * \return the Endpoint
    */
-  Ipv4EndPoint *Allocate (Ptr<NetDevice> boundNetDevice, uint16_t port);
+  Ipv4EndPoint * Allocate (Ptr<NetDevice> boundNetDevice, uint16_t port);
   /**
    * \brief Allocate an IPv4 Endpoint
    * \param boundNetDevice Bound NetDevice (if any)
@@ -324,7 +323,7 @@ public:
    * \param port port to use
    * \return the Endpoint
    */
-  Ipv4EndPoint *Allocate (Ptr<NetDevice> boundNetDevice, Ipv4Address address, uint16_t port);
+  Ipv4EndPoint * Allocate (Ptr<NetDevice> boundNetDevice, Ipv4Address address, uint16_t port);
   /**
    * \brief Allocate an IPv4 Endpoint
    * \param boundNetDevice Bound NetDevice (if any)
@@ -334,28 +333,28 @@ public:
    * \param peerPort remote port to use
    * \return the Endpoint
    */
-  Ipv4EndPoint *Allocate (Ptr<NetDevice> boundNetDevice,
-                          Ipv4Address localAddress, uint16_t localPort,
-                          Ipv4Address peerAddress, uint16_t peerPort);
+  Ipv4EndPoint * Allocate (Ptr<NetDevice> boundNetDevice,
+                           Ipv4Address localAddress, uint16_t localPort,
+                           Ipv4Address peerAddress, uint16_t peerPort);
 
   /**
    * \brief Allocate an IPv6 Endpoint
    * \return the Endpoint
    */
-  Ipv6EndPoint *Allocate6 (void);
+  Ipv6EndPoint * Allocate6 (void);
   /**
    * \brief Allocate an IPv6 Endpoint
    * \param address address to use
    * \return the Endpoint
    */
-  Ipv6EndPoint *Allocate6 (Ipv6Address address);
+  Ipv6EndPoint * Allocate6 (Ipv6Address address);
   /**
    * \brief Allocate an IPv6 Endpoint
    * \param boundNetDevice Bound NetDevice (if any)
    * \param port port to use
    * \return the Endpoint
    */
-  Ipv6EndPoint *Allocate6 (Ptr<NetDevice> boundNetDevice, uint16_t port);
+  Ipv6EndPoint * Allocate6 (Ptr<NetDevice> boundNetDevice, uint16_t port);
   /**
    * \brief Allocate an IPv6 Endpoint
    * \param boundNetDevice Bound NetDevice (if any)
@@ -363,7 +362,7 @@ public:
    * \param port port to use
    * \return the Endpoint
    */
-  Ipv6EndPoint *Allocate6 (Ptr<NetDevice> boundNetDevice, Ipv6Address address, uint16_t port);
+  Ipv6EndPoint * Allocate6 (Ptr<NetDevice> boundNetDevice, Ipv6Address address, uint16_t port);
   /**
    * \brief Allocate an IPv6 Endpoint
    * \param boundNetDevice Bound NetDevice (if any)
@@ -373,9 +372,9 @@ public:
    * \param peerPort remote port to use
    * \return the Endpoint
    */
-  Ipv6EndPoint *Allocate6 (Ptr<NetDevice> boundNetDevice,
-                           Ipv6Address localAddress, uint16_t localPort,
-                           Ipv6Address peerAddress, uint16_t peerPort);
+  Ipv6EndPoint * Allocate6 (Ptr<NetDevice> boundNetDevice,
+                            Ipv6Address localAddress, uint16_t localPort,
+                            Ipv6Address peerAddress, uint16_t peerPort);
 
   /**
    * \brief Remove an IPv4 Endpoint.
@@ -387,7 +386,7 @@ public:
    * \param endPoint the end point to remove
    */
   void DeAllocate (Ipv6EndPoint *endPoint);
-  
+
   // Inherited from IpL4Protocol, not used in this implementation
   virtual enum IpL4Protocol::RxStatus Receive (Ptr<Packet> p,
                                                Ipv4Header const &incomingIpHeader,
@@ -416,7 +415,7 @@ protected:
    * \brief Setup socket factory and callbacks when aggregated to a node
    *
    * This function will notify other components connected to the node that a
-   * new stack member is now connected. 
+   * new stack member is now connected.
    */
   virtual void NotifyNewAggregate ();
 

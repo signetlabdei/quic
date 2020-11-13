@@ -128,7 +128,7 @@ Traces(uint32_t serverId, std::string pathVersion, std::string finalPart)
 
 int main (int argc, char *argv[])
 {
-  std::string transport_prot = "TcpVegas";
+  std::string transport_prot = "QuicBbr";
   double error_p = 0.0;
   std::string bandwidth = "2Mbps";
   std::string delay = "0.01ms";
@@ -182,6 +182,7 @@ int main (int argc, char *argv[])
   // LogComponentEnable("PfifoFastQueueDisc", LOG_LEVEL_ALL);
   // LogComponentEnable ("QuicSocketBase", LOG_LEVEL_ALL);
   LogComponentEnable("TcpVegas", LOG_LEVEL_ALL);
+  LogComponentEnable("QuicBbr", LOG_LEVEL_ALL);
   // LogComponentEnable("QuicL5Protocol", LOG_LEVEL_ALL);
 
   // Set the simulation start and stop time
