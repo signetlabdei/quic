@@ -79,7 +79,7 @@ QuicStreamBase::GetInstanceTypeId () const
 }
 
 
-QuicStreamBase::QuicStreamBase (void) // @suppress("Class members should be properly initialized")
+QuicStreamBase::QuicStreamBase (void) 
   : QuicStream (),
   m_streamType (NONE),
   m_streamDirectionType (UNKNOWN),

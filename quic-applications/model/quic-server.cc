@@ -151,11 +151,6 @@ QuicServer::StartApplication (void)
   m_socket->Listen ();
   m_socket6->SetRecvCallback (MakeCallback (&QuicServer::HandleRead, this));
 
-  // if(!m_outFile.is_open())
-  // {
-  //   m_outFile.open(m_outFilename.c_str());
-  // }
-
 }
 
 void
@@ -179,60 +174,6 @@ QuicServer::HandleRead (Ptr<Socket> socket)
     {
       if (packet->GetSize () > 0)
         {
-          // SeqTsHeader seqTs;
-          // bool removed = false;
-          // uint32_t m_hSize = 0;
-          // uint32_t m_currentSequenceNumber = 0;
-          // Time m_txTs;
-          // removed = (packet->PeekHeader (seqTs) == 12);
-          // if(removed)
-          // {
-          //   packet->RemoveHeader (seqTs);
-          //   m_currentSequenceNumber = seqTs.GetSeq ();
-          //   m_hSize = seqTs.GetSerializedSize();
-          //   m_txTs = seqTs.GetTs ();
-          //   m_lossCounter.NotifyReceived (m_currentSequenceNumber);
-          // }
-
-          // if(!m_outFile.is_open())
-          // {
-          //   m_outFile.open(m_outFilename.c_str(), std::ios::app);
-          // }
-          // if (InetSocketAddress::IsMatchingType (from))
-          //   {
-          //     NS_LOG_INFO ("TraceDelay: RX " << packet->GetSize () + m_hSize*removed <<
-          //                  " bytes from "<< InetSocketAddress::ConvertFrom (from).GetIpv4 () <<
-          //                  " Sequence Number: " << m_currentSequenceNumber <<
-          //                  " Uid: " << packet->GetUid () <<
-          //                  " TXtime: " << m_txTs <<
-          //                  " RXtime: " << Simulator::Now () <<
-          //                  " Delay: " << Simulator::Now () - m_txTs);
-          //     m_outFile << packet->GetSize () + m_hSize <<
-          //                  " " << InetSocketAddress::ConvertFrom (from).GetIpv4 () <<
-          //                  " " << m_port <<
-          //                  " " << m_currentSequenceNumber <<
-          //                  " " << packet->GetUid () <<
-          //                  " " << m_txTs <<
-          //                  " " << Simulator::Now () <<
-          //                  " " << Simulator::Now () - m_txTs << "\n";
-          //   }
-          // else if (Inet6SocketAddress::IsMatchingType (from))
-          //   {
-          //     NS_LOG_INFO ("TraceDelay: RX " << packet->GetSize () + m_hSize*removed <<
-          //                  " bytes from "<< Inet6SocketAddress::ConvertFrom (from).GetIpv6 () <<
-          //                  " Sequence Number: " << m_currentSequenceNumber <<
-          //                  " Uid: " << packet->GetUid () <<
-          //                  " TXtime: " << m_txTs <<
-          //                  " RXtime: " << Simulator::Now () <<
-          //                  " Delay: " << Simulator::Now () - m_txTs);
-          //     m_outFile << packet->GetSize () + m_hSize*removed <<
-          //                  " " << Inet6SocketAddress::ConvertFrom (from).GetIpv6 () <<
-          //                  " " << m_currentSequenceNumber <<
-          //                  " " << packet->GetUid () <<
-          //                  " " << m_txTs <<
-          //                  " " << Simulator::Now () <<
-          //                  " " << Simulator::Now () - m_txTs << "\n";
-          //   }
           m_received++;
         }
     }

@@ -50,7 +50,7 @@ public:
 
   QuicSocketTxEdfScheduler ();
   QuicSocketTxEdfScheduler (const QuicSocketTxEdfScheduler &other);
-  ~QuicSocketTxEdfScheduler (void);
+  virtual ~QuicSocketTxEdfScheduler (void);
 
   /**
    * Add a tx item to the scheduling list and assign priority
