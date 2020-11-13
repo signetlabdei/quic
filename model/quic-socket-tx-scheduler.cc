@@ -73,12 +73,17 @@ QuicSocketTxScheduleItem::Compare (const QuicSocketTxScheduleItem & o) const
 
 
 
-QuicSocketTxScheduleItem::QuicSocketTxScheduleItem (uint64_t id, uint64_t off, double p, Ptr<QuicSocketTxItem> it) : m_streamId (id),
-                                                                                                                     m_offset (off), m_priority (p), m_item (it)
+QuicSocketTxScheduleItem::QuicSocketTxScheduleItem (uint64_t id, uint64_t off, double p, Ptr<QuicSocketTxItem> it)
+  : m_streamId (id), 
+    m_offset (off), 
+    m_priority (p), 
+    m_item (it)
 {}
 
-QuicSocketTxScheduleItem::QuicSocketTxScheduleItem (const QuicSocketTxScheduleItem &other) : m_streamId (other.m_streamId),
-                                                                                             m_offset (other.m_offset), m_priority (other.m_priority)
+QuicSocketTxScheduleItem::QuicSocketTxScheduleItem (const QuicSocketTxScheduleItem &other)
+  : m_streamId (other.m_streamId), 
+    m_offset (other.m_offset), 
+    m_priority (other.m_priority)
 {
   m_item = CreateObject<QuicSocketTxItem> (*(other.m_item));
 }

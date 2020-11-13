@@ -55,20 +55,31 @@ TypeId QuicSocketTxItem::GetTypeId (void)
   return tid;
 }
 
-QuicSocketTxItem::QuicSocketTxItem () :
-  m_packet (0), m_packetNumber (0), m_lost (false), m_retrans (false), m_sacked (
-    false), m_acked (false), m_isStream (false), m_isStream0 (false), m_lastSent (
-    Time::Min ())
+QuicSocketTxItem::QuicSocketTxItem () 
+  : m_packet (0), 
+    m_packetNumber (0), 
+    m_lost (false), 
+    m_retrans (false), 
+    m_sacked (false), 
+    m_acked (false), 
+    m_isStream (false), 
+    m_isStream0 (false), 
+    m_lastSent (Time::Min ())
 {
   m_generated = Simulator::Now ();
 }
 
-QuicSocketTxItem::QuicSocketTxItem (const QuicSocketTxItem &other) :
-  m_packet (other.m_packet), m_packetNumber (other.m_packetNumber), m_lost (
-    other.m_lost), m_retrans (other.m_retrans), m_sacked (
-    other.m_sacked), m_acked (other.m_acked), m_isStream (
-    other.m_isStream), m_isStream0 (other.m_isStream0), m_lastSent (
-    other.m_lastSent), m_generated (other.m_generated)
+QuicSocketTxItem::QuicSocketTxItem (const QuicSocketTxItem &other)
+  : m_packet (other.m_packet),
+    m_packetNumber (other.m_packetNumber), 
+    m_lost (other.m_lost), 
+    m_retrans (other.m_retrans), 
+    m_sacked (other.m_sacked), 
+    m_acked (other.m_acked), 
+    m_isStream (other.m_isStream), 
+    m_isStream0 (other.m_isStream0), 
+    m_lastSent (other.m_lastSent), 
+    m_generated (other.m_generated)
 {
   m_packet = other.m_packet->Copy ();
 }
