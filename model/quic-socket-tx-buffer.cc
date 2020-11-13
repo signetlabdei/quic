@@ -43,9 +43,10 @@ NS_LOG_COMPONENT_DEFINE ("QuicSocketTxBuffer");
 
 TypeId QuicSocketTxItem::GetTypeId (void)
 {
-  static TypeId tid =
-    TypeId ("ns3::QuicSocketTxItem").SetParent<Object>().SetGroupName (
-      "Internet").AddConstructor<QuicSocketTxItem>()
+  static TypeId tid = TypeId ("ns3::QuicSocketTxItem")
+    .SetParent<Object>()
+    .SetGroupName ("Internet")
+    .AddConstructor<QuicSocketTxItem>()
 //    .AddTraceSource ("UnackSequence",
 //                     "First unacknowledged sequence number (SND.UNA)",
 //                     MakeTraceSourceAccessor (&QuicSocketTxBuffer::m_sentSize),

@@ -123,7 +123,7 @@ QuicSocketTxScheduler::GetTypeId (void)
   static TypeId tid = TypeId ("ns3::QuicSocketTxScheduler")
     .SetParent<Object> ()
     .SetGroupName ("Internet")
-    .AddConstructor<QuicSocketTxScheduler>()
+    .AddConstructor<QuicSocketTxScheduler> ()
   ;
   return tid;
 }

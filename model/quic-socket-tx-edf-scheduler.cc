@@ -42,13 +42,15 @@ NS_OBJECT_ENSURE_REGISTERED (QuicSocketTxEdfScheduler);
 
 TypeId QuicSocketTxEdfScheduler::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::QuicSocketTxEdfScheduler").SetParent<
-    QuicSocketTxScheduler>().SetGroupName ("Internet").AddConstructor<
-    QuicSocketTxEdfScheduler>().AddAttribute ("RetxFirst",
-                                              "Prioritize retransmissions regardless of stream",
-                                              BooleanValue (false),
-                                              MakeBooleanAccessor (&QuicSocketTxEdfScheduler::m_retxFirst),
-                                              MakeBooleanChecker ());
+  static TypeId tid = TypeId ("ns3::QuicSocketTxEdfScheduler")
+    .SetParent<QuicSocketTxScheduler>()
+    .SetGroupName ("Internet")
+    .AddConstructor<QuicSocketTxEdfScheduler>()
+    .AddAttribute ("RetxFirst", "Prioritize retransmissions regardless of stream",
+                   BooleanValue (false),
+                   MakeBooleanAccessor (&QuicSocketTxEdfScheduler::m_retxFirst),
+                   MakeBooleanChecker ())
+  ;
   return tid;
 }
 

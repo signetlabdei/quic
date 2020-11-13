@@ -116,51 +116,41 @@ QuicSocketBase::GetTypeId (void)
                    UintegerValue (2),                   // according to the QUIC RFC this value should default to 0, and be increased by the client/server
                    MakeUintegerAccessor (&QuicSocketBase::m_initial_max_stream_id_bidi),
                    MakeUintegerChecker<uint32_t> ())
-    .AddAttribute (
-    "MaxStreamIdUni", "Maximum StreamId for Unidirectional Streams",
-    UintegerValue (2),                                  // according to the QUIC RFC this value should default to 0, and be increased by the client/server
-    MakeUintegerAccessor (&QuicSocketBase::m_initial_max_stream_id_uni),
-    MakeUintegerChecker<uint32_t> ())
-    .AddAttribute (
-    "MaxTrackedGaps", "Maximum number of gaps in an ACK",
-    UintegerValue (20),
-    MakeUintegerAccessor (&QuicSocketBase::m_maxTrackedGaps),
-    MakeUintegerChecker<uint32_t> ())
-    .AddAttribute (
-    "OmitConnectionId",
-    "Omit ConnectionId field in Short QuicHeader format",
-    BooleanValue (false),
-    MakeBooleanAccessor (&QuicSocketBase::m_omit_connection_id),
-    MakeBooleanChecker ())
-    .AddAttribute (
-    "MaxPacketSize",
-    "Maximum Packet Size",
-    UintegerValue (1460),
-    MakeUintegerAccessor (&QuicSocketBase::GetSegSize,
-                          &QuicSocketBase::SetSegSize),
-    MakeUintegerChecker<uint16_t> ())
-    .AddAttribute (
-    "SocketSndBufSize",
-    "QuicSocketBase maximum transmit buffer size (bytes)",
-    UintegerValue (131072),                                  // 128k
-    MakeUintegerAccessor (&QuicSocketBase::GetSocketSndBufSize,
-                          &QuicSocketBase::SetSocketSndBufSize),
-    MakeUintegerChecker<uint32_t> ())
-    .AddAttribute (
-    "SocketRcvBufSize",
-    "QuicSocketBase maximum receive buffer size (bytes)",
-    UintegerValue (131072),                                  // 128k
-    MakeUintegerAccessor (&QuicSocketBase::GetSocketRcvBufSize,
-                          &QuicSocketBase::SetSocketRcvBufSize),
-    MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("MaxStreamIdUni", "Maximum StreamId for Unidirectional Streams",
+                   UintegerValue (2),                                  // according to the QUIC RFC this value should default to 0, and be increased by the client/server
+                   MakeUintegerAccessor (&QuicSocketBase::m_initial_max_stream_id_uni),
+                   MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("MaxTrackedGaps", "Maximum number of gaps in an ACK",
+                   UintegerValue (20),
+                   MakeUintegerAccessor (&QuicSocketBase::m_maxTrackedGaps),
+                   MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("OmitConnectionId", "Omit ConnectionId field in Short QuicHeader format",
+                   BooleanValue (false),
+                   MakeBooleanAccessor (&QuicSocketBase::m_omit_connection_id),
+                   MakeBooleanChecker ())
+    .AddAttribute ("MaxPacketSize", "Maximum Packet Size",
+                   UintegerValue (1460),
+                   MakeUintegerAccessor (&QuicSocketBase::GetSegSize,
+                                         &QuicSocketBase::SetSegSize),
+                   MakeUintegerChecker<uint16_t> ())
+    .AddAttribute ("SocketSndBufSize", "QuicSocketBase maximum transmit buffer size (bytes)",
+                   UintegerValue (131072),                                  // 128k
+                   MakeUintegerAccessor (&QuicSocketBase::GetSocketSndBufSize,
+                                         &QuicSocketBase::SetSocketSndBufSize),
+                   MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("SocketRcvBufSize", "QuicSocketBase maximum receive buffer size (bytes)",
+                   UintegerValue (131072),                                  // 128k
+                   MakeUintegerAccessor (&QuicSocketBase::GetSocketRcvBufSize,
+                                         &QuicSocketBase::SetSocketRcvBufSize),
+                   MakeUintegerChecker<uint32_t> ())
     //	.AddAttribute ("StatelessResetToken, "Stateless Reset Token",
     //				   UintegerValue (0),
     //				   MakeUintegerAccessor (&QuicSocketBase::m_stateless_reset_token),
     //				   MakeUintegerChecker<uint128_t> ())
-    .AddAttribute (
-    "AckDelayExponent", "Ack Delay Exponent", UintegerValue (3),
-    MakeUintegerAccessor (&QuicSocketBase::m_ack_delay_exponent),
-    MakeUintegerChecker<uint8_t> ())
+    .AddAttribute ("AckDelayExponent", "Ack Delay Exponent", 
+                   UintegerValue (3),
+                   MakeUintegerAccessor (&QuicSocketBase::m_ack_delay_exponent),
+                   MakeUintegerChecker<uint8_t> ())
     .AddAttribute ("FlushOnClose", "Determines the connection close behavior",
                    BooleanValue (true),
                    MakeBooleanAccessor (&QuicSocketBase::m_flushOnClose),
@@ -170,46 +160,34 @@ QuicSocketBase::GetTypeId (void)
                    UintegerValue (2),
                    MakeUintegerAccessor (&QuicSocketState::m_kMaxTLPs),
                    MakeUintegerChecker<uint32_t> ())
-    .AddAttribute (
-    "kReorderingThreshold",
-    "Maximum reordering in packet number space before FACK style loss detection considers a packet lost",
-    UintegerValue (3),
-    MakeUintegerAccessor (&QuicSocketState::m_kReorderingThreshold),
-    MakeUintegerChecker<uint32_t> ())
-    .AddAttribute (
-    "kTimeReorderingFraction",
-    "Maximum reordering in time space before time based loss detection considers a packet lost",
-    DoubleValue (9 / 8),
-    MakeDoubleAccessor (&QuicSocketState::m_kTimeReorderingFraction),
-    MakeDoubleChecker<double> (0))
-    .AddAttribute (
-    "kUsingTimeLossDetection",
-    "Whether time based loss detection is in use", BooleanValue (false),
-    MakeBooleanAccessor (&QuicSocketState::m_kUsingTimeLossDetection),
-    MakeBooleanChecker ())
-    .AddAttribute (
-    "kMinTLPTimeout",
-    "Minimum time in the future a tail loss probe alarm may be set for",
-    TimeValue (MilliSeconds (10)),
-    MakeTimeAccessor (&QuicSocketState::m_kMinTLPTimeout),
-    MakeTimeChecker ())
-    .AddAttribute (
-    "kMinRTOTimeout",
-    "Minimum time in the future an RTO alarm may be set for",
-    TimeValue (MilliSeconds (200)),
-    MakeTimeAccessor (&QuicSocketState::m_kMinRTOTimeout),
-    MakeTimeChecker ())
-    .AddAttribute (
-    "kDelayedAckTimeout", "The length of the peer's delayed ACK timer",
-    TimeValue (MilliSeconds (25)),
-    MakeTimeAccessor (&QuicSocketState::m_kDelayedAckTimeout),
-    MakeTimeChecker ())
-    .AddAttribute (
-    "kDefaultInitialRtt",
-    "The default RTT used before an RTT sample is taken",
-    TimeValue (MilliSeconds (100)),
-    MakeTimeAccessor (&QuicSocketState::m_kDefaultInitialRtt),
-    MakeTimeChecker ())
+    .AddAttribute ("kReorderingThreshold", "Maximum reordering in packet number space before FACK style loss detection considers a packet lost",
+                   UintegerValue (3),
+                   MakeUintegerAccessor (&QuicSocketState::m_kReorderingThreshold),
+                   MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("kTimeReorderingFraction", "Maximum reordering in time space before time based loss detection considers a packet lost",
+                   DoubleValue (9 / 8),
+                   MakeDoubleAccessor (&QuicSocketState::m_kTimeReorderingFraction),
+                   MakeDoubleChecker<double> (0))
+    .AddAttribute ("kUsingTimeLossDetection", "Whether time based loss detection is in use", 
+                   BooleanValue (false),
+                   MakeBooleanAccessor (&QuicSocketState::m_kUsingTimeLossDetection),
+                   MakeBooleanChecker ())
+    .AddAttribute ("kMinTLPTimeout", "Minimum time in the future a tail loss probe alarm may be set for",
+                   TimeValue (MilliSeconds (10)),
+                   MakeTimeAccessor (&QuicSocketState::m_kMinTLPTimeout),
+                   MakeTimeChecker ())
+    .AddAttribute ("kMinRTOTimeout", "Minimum time in the future an RTO alarm may be set for",
+                   TimeValue (MilliSeconds (200)),
+                   MakeTimeAccessor (&QuicSocketState::m_kMinRTOTimeout),
+                   MakeTimeChecker ())
+    .AddAttribute ("kDelayedAckTimeout", "The length of the peer's delayed ACK timer",
+                   TimeValue (MilliSeconds (25)),
+                   MakeTimeAccessor (&QuicSocketState::m_kDelayedAckTimeout),
+                   MakeTimeChecker ())
+    .AddAttribute ("kDefaultInitialRtt", "The default RTT used before an RTT sample is taken",
+                   TimeValue (MilliSeconds (100)),
+                   MakeTimeAccessor (&QuicSocketState::m_kDefaultInitialRtt),
+                   MakeTimeChecker ())
     .AddAttribute ("InitialSlowStartThreshold",
                    "QUIC initial slow start threshold (bytes)",
                    UintegerValue (INT32_MAX),
@@ -233,12 +211,15 @@ QuicSocketBase::GetTypeId (void)
                    TimeValue (MilliSeconds (100)),
                    MakeTimeAccessor (&QuicSocketBase::m_defaultLatency),
                    MakeTimeChecker ())
-    .AddAttribute (
-    "LegacyCongestionControl",
-    "When true, use TCP implementations for the congestion control",
-    BooleanValue (false),
-    MakeBooleanAccessor (&QuicSocketBase::m_quicCongestionControlLegacy),
-    MakeBooleanChecker ())
+    .AddAttribute ("LegacyCongestionControl", "When true, use TCP implementations for the congestion control",
+                   BooleanValue (false),
+                   MakeBooleanAccessor (&QuicSocketBase::m_quicCongestionControlLegacy),
+                   MakeBooleanChecker ())
+    .AddAttribute ("TCB",
+                   "The connection's QuicSocketState",
+                   PointerValue (),
+                   MakePointerAccessor (&QuicSocketBase::m_tcb),
+                   MakePointerChecker<QuicSocketState> ())
     // .AddTraceSource ("RTO", "Retransmission timeout",
     //                  MakeTraceSourceAccessor (&QuicSocketBase::m_rto),
     //                  "ns3::Time::TracedValueCallback").AddTraceSource (
@@ -308,11 +289,6 @@ QuicSocketBase::GetTypeId (void)
                      "Receive QUIC packet from UDP protocol",
                      MakeTraceSourceAccessor (&QuicSocketBase::m_rxTrace),
                      "ns3::QuicSocketBase::QuicTxRxTracedCallback")
-    .AddAttribute ("TCB",
-                   "The connection's QuicSocketState",
-                   PointerValue (),
-                   MakePointerAccessor (&QuicSocketBase::m_tcb),
-                   MakePointerChecker<QuicSocketState> ())
   ;
   return tid;
 }
@@ -591,14 +567,13 @@ QuicSocketBase::QuicSocketBase (const QuicSocketBase& sock)   // Copy constructo
     m_quicCongestionControlLegacy (sock.m_quicCongestionControlLegacy),
     m_queue_ack (sock.m_queue_ack),
     m_numPacketsReceivedSinceLastAckSent (sock.m_numPacketsReceivedSinceLastAckSent),
+    m_lastMaxData(0),
+    m_maxDataInterval(10),
     m_pacingTimer (Timer::REMOVE_ON_DESTROY),
     m_txTrace (sock.m_txTrace),
     m_rxTrace (sock.m_rxTrace)
 {
   NS_LOG_FUNCTION (this);
-  NS_LOG_LOGIC (this << " invoked the copy constructor");
-  m_lastMaxData = 0;
-  m_maxDataInterval = 10;
 
 //  Callback<void, Ptr< Socket > > vPS = MakeNullCallback<void, Ptr<Socket> > ();
 //  Callback<void, Ptr<Socket>, const Address &> vPSA = MakeNullCallback<void, Ptr<Socket>, const Address &> ();

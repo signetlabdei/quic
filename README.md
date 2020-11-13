@@ -35,14 +35,14 @@ Then, clone the quic module:
 git clone https://github.com/signetlabdei/quic quic
 ```
 
-Thirdly, copy the QUIC applications and helpers to the application module
+Thirdly, copy the QUIC applications and helpers to the applications module
 
 ```bash
 cp src/quic/quic-applications/model/* src/applications/model/
 cp src/quic/quic-applications/helper/* src/applications/helper/
 ```
 
-Finally, edit the `wscript` file of the internet module and add
+Finally, edit the `wscript` file of the applications module and add
 
 ```python
         'model/quic-echo-client.h',

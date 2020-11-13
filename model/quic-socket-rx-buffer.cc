@@ -70,9 +70,11 @@ NS_OBJECT_ENSURE_REGISTERED (QuicSocketRxBuffer);
 TypeId
 QuicSocketRxBuffer::GetTypeId (void)
 {
-  static TypeId tid =
-    TypeId ("ns3::QuicSocketRxBuffer").SetParent<Object> ().SetGroupName (
-      "Internet").AddConstructor<QuicSocketRxBuffer> ();
+  static TypeId tid = TypeId ("ns3::QuicSocketRxBuffer")
+    .SetParent<Object> ()
+    .SetGroupName ("Internet")
+    .AddConstructor<QuicSocketRxBuffer> ()
+  ;
   return tid;
 }
 

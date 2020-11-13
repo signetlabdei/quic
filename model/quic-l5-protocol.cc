@@ -60,13 +60,15 @@ TypeId
 QuicL5Protocol::GetTypeId (void)
 {
   static TypeId tid =
-    TypeId ("ns3::QuicL5Protocol").SetParent<QuicSocketBase> ().SetGroupName (
-      "Internet").AddConstructor<QuicL5Protocol> ()
-    .AddAttribute (
-      "StreamList", "The list of streams associated to this protocol.",
-      ObjectVectorValue (),
-      MakeObjectVectorAccessor (&QuicL5Protocol::m_streams),
-      MakeObjectVectorChecker<QuicStreamBase> ());
+    TypeId ("ns3::QuicL5Protocol")
+      .SetParent<QuicSocketBase> ()
+      .SetGroupName ("Internet")
+      .AddConstructor<QuicL5Protocol> ()
+      .AddAttribute ("StreamList", "The list of streams associated to this protocol.",
+                     ObjectVectorValue (),
+                     MakeObjectVectorAccessor (&QuicL5Protocol::m_streams),
+                     MakeObjectVectorChecker<QuicStreamBase> ())
+  ;
   return tid;
 }
 
