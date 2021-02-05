@@ -231,8 +231,12 @@ QuicCongestionOps::OnPacketAckedCC (Ptr<TcpSocketState> tcb,
     {
       NS_LOG_LOGIC ("In congestion avoidance");
       // Congestion Avoidance.
-      tcbd->m_cWnd += tcbd->m_segmentSize * ackedPacket->m_packet->GetSize ()
-        / tcbd->m_cWnd;
+      if (tcbd->m_cWnd > 0) {
+          tcbd->m_cWnd += tcbd->m_segmentSize * ackedPacket->m_packet->GetSize ()
+              / tcbd->m_cWnd;
+      } else {
+          tcbd->m_cWnd = tcbd->m_kMinimumWindow;
+      }
     }
 }
 
