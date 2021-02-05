@@ -111,7 +111,7 @@ QuicStreamBase::SetQuicL5 (Ptr<QuicL5Protocol> quicl5)
   NS_LOG_FUNCTION (this);
   m_quicl5 = quicl5;
   SetStreamRcvBufSize (m_streamRxBufferSize);
-  SetStreamRcvBufSize (m_streamTxBufferSize);
+  SetStreamSndBufSize (m_streamTxBufferSize);
 }
 
 
