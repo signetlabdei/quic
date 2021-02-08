@@ -488,7 +488,7 @@ QuicStreamBase::Recv (Ptr<Packet> frame, const QuicSubheader& sub, Address &addr
               NS_LOG_WARN ("Dropping packet as it could not be inserted in RX buffer");
               if (frame->GetSize() > m_rxBuffer->Available()) {
                   // Abort connection if indeed buffer is full
-                  m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::NO_ERROR,                                     "Aborting connection due to full RX buffer");
+                  m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::NO_ERROR, "Aborting connection due to full RX buffer");
               }
             }
         }
