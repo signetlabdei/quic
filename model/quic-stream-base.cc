@@ -484,10 +484,12 @@ QuicStreamBase::Recv (Ptr<Packet> frame, const QuicSubheader& sub, Address &addr
           NS_LOG_INFO ("Buffering unordered received frame - offset " << m_recvSize << ", frame offset " << sub.GetOffset ());
           if (!m_rxBuffer->Add (frame, sub) && frame->GetSize () > 0)
             {
-              // Insert failed: No data or RX buffer full
-              NS_LOG_INFO ("Dropping packet due to full RX buffer");
-              // Abort simulation!
-              NS_ABORT_MSG ("Aborting Connection");
+              // Insert failed: No or duplicate data, or RX buffer full
+              NS_LOG_WARN ("Dropping packet as it could not be inserted in RX buffer");
+              if (frame->GetSize() > m_rxBuffer->Available()) {
+                  // Abort connection if indeed buffer is full
+                  m_quicl5->SignalAbortConnection (QuicSubheader::TransportErrorCodes_t::NO_ERROR, "Aborting connection due to full RX buffer");
+              }
             }
         }
 
