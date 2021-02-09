@@ -231,7 +231,7 @@ QuicCongestionOps::OnPacketAckedCC (Ptr<TcpSocketState> tcb,
     {
       NS_LOG_LOGIC ("In congestion avoidance");
       // Congestion Avoidance.
-      if (tcbd->m_cWnd > 0) {
+      if (tcbd->m_cWnd > (uint32_t) 0) {
           tcbd->m_cWnd += tcbd->m_segmentSize * ackedPacket->m_packet->GetSize ()
               / tcbd->m_cWnd;
       } else {
