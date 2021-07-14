@@ -110,6 +110,7 @@ QuicBbr::QuicBbr (const QuicBbr &sock)
   m_uv = CreateObject<UniformRandomVariable> ();
 }
 
+//随机数生成
 int64_t
 QuicBbr::AssignStreams (int64_t stream)
 {
@@ -118,6 +119,8 @@ QuicBbr::AssignStreams (int64_t stream)
   return 1;
 }
 
+
+//初始化与轮数计数相关的变量
 void
 QuicBbr::InitRoundCounting ()
 {
@@ -127,6 +130,7 @@ QuicBbr::InitRoundCounting ()
   m_roundCount = 0;
 }
 
+//初始化完整的管道估计器。
 void
 QuicBbr::InitFullPipe ()
 {
@@ -136,6 +140,7 @@ QuicBbr::InitFullPipe ()
   m_fullBandwidthCount = 0;
 }
 
+//初始化pacingrate
 void
 QuicBbr::InitPacingRate (Ptr<QuicSocketState> tcb)
 {
@@ -157,6 +162,7 @@ QuicBbr::InitPacingRate (Ptr<QuicSocketState> tcb)
 
 }
 
+//更新特定于 BBR_STARTUP 状态的变量
 void
 QuicBbr::EnterStartup ()
 {
@@ -166,6 +172,7 @@ QuicBbr::EnterStartup ()
   m_cWndGain = m_highGain;
 }
 
+//如果套接字从空闲状态重新启动，则更新pacingrate
 void
 QuicBbr::HandleRestartFromIdle (Ptr<QuicSocketState> tcb, const RateSample * rs)
 {
@@ -180,6 +187,7 @@ QuicBbr::HandleRestartFromIdle (Ptr<QuicSocketState> tcb, const RateSample * rs)
     }
 }
 
+//根据网络模型更新pacingrate 更新机制：
 void
 QuicBbr::SetPacingRate (Ptr<QuicSocketState> tcb, double gain)
 {
@@ -192,6 +200,7 @@ QuicBbr::SetPacingRate (Ptr<QuicSocketState> tcb, double gain)
     }
 }
 
+//估计拥塞窗口的目标值
 uint32_t
 QuicBbr::InFlight (Ptr<QuicSocketState> tcb, double gain)
 {
@@ -205,6 +214,8 @@ QuicBbr::InFlight (Ptr<QuicSocketState> tcb, double gain)
   return gain * estimatedBdp + quanta;
 }
 
+
+//在 BBR_PROBE_BW 状态下使用循环增益算法提高pacing gain
 void
 QuicBbr::AdvanceCyclePhase ()
 {
@@ -214,6 +225,8 @@ QuicBbr::AdvanceCyclePhase ()
   m_pacingGain = PACING_GAIN_CYCLE [m_cycleIndex];
 }
 
+
+//检查是否在 BBR_PROBE_BW 中移动到下一个pacing gain值
 bool
 QuicBbr::IsNextCyclePhase (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
 {
@@ -233,6 +246,7 @@ QuicBbr::IsNextCyclePhase (Ptr<QuicSocketState> tcb, const struct RateSample * r
     }
 }
 
+//在BBR_PROBE_BW 状态下是否提高pacing增益，如果是调用AdvanceCyclePhase()
 void
 QuicBbr::CheckCyclePhase (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
 {
@@ -243,6 +257,7 @@ QuicBbr::CheckCyclePhase (Ptr<QuicSocketState> tcb, const struct RateSample * rs
     }
 }
 
+//检查管道是否已经充满
 void
 QuicBbr::CheckFullPipe (const struct RateSample * rs)
 {
@@ -268,6 +283,7 @@ QuicBbr::CheckFullPipe (const struct RateSample * rs)
     }
 }
 
+//更新 BBR_DRAIN 状态下的特定变量
 void
 QuicBbr::EnterDrain ()
 {
@@ -277,6 +293,7 @@ QuicBbr::EnterDrain ()
   m_cWndGain = m_highGain;
 }
 
+//更新 BBR_PROBE_BW 状态下的特定变量 
 void
 QuicBbr::EnterProbeBW ()
 {
@@ -288,6 +305,7 @@ QuicBbr::EnterProbeBW ()
   AdvanceCyclePhase ();
 }
 
+//检查是否应该进入BBR_DRAIN或BBR_PROBE_BW 状态
 void
 QuicBbr::CheckDrain (Ptr<QuicSocketState> tcb)
 {
@@ -303,6 +321,7 @@ QuicBbr::CheckDrain (Ptr<QuicSocketState> tcb)
     }
 }
 
+//更新最小RTT
 void
 QuicBbr::UpdateRTprop (Ptr<QuicSocketState> tcb)
 {
@@ -315,6 +334,7 @@ QuicBbr::UpdateRTprop (Ptr<QuicSocketState> tcb)
     }
 }
 
+//更新BBR_PROBE_RTT 状态下的特定变量
 void
 QuicBbr::EnterProbeRTT ()
 {
@@ -324,6 +344,7 @@ QuicBbr::EnterProbeRTT ()
   m_cWndGain = 1;
 }
 
+//帮助记住最近已知的良好拥塞窗口或最近未被丢失恢复或ProbeRTT调制的拥塞窗口
 void
 QuicBbr::SaveCwnd (Ptr<const QuicSocketState> tcb)
 {
@@ -338,13 +359,14 @@ QuicBbr::SaveCwnd (Ptr<const QuicSocketState> tcb)
     }
 }
 
+//帮助恢复最后已知的良好的拥塞窗口
 void
 QuicBbr::RestoreCwnd (Ptr<QuicSocketState> tcb)
 {
   NS_LOG_FUNCTION (this << tcb);
   tcb->m_cWnd = std::max (m_priorCwnd, tcb->m_cWnd.Get ());
 }
-
+//根据管道是否充满判断执行 EnterProbeBW () 或者是EnterStartup () 
 void
 QuicBbr::ExitProbeRTT ()
 {
@@ -359,6 +381,7 @@ QuicBbr::ExitProbeRTT ()
     }
 }
 
+//BBR_PROBE_RTT状态的处理步骤
 void
 QuicBbr::HandleProbeRTT (Ptr<QuicSocketState> tcb)
 {
@@ -387,6 +410,8 @@ QuicBbr::HandleProbeRTT (Ptr<QuicSocketState> tcb)
     }
 }
 
+
+//处理与ProbeRTT状态相关的步骤
 void
 QuicBbr::CheckProbeRTT (Ptr<QuicSocketState> tcb)
 {
@@ -409,6 +434,7 @@ QuicBbr::CheckProbeRTT (Ptr<QuicSocketState> tcb)
   m_idleRestart = false;
 }
 
+//更新基于网络模型的发送额
 void
 QuicBbr::SetSendQuantum (Ptr<QuicSocketState> tcb)
 {
@@ -430,6 +456,7 @@ QuicBbr::SetSendQuantum (Ptr<QuicSocketState> tcb)
     }*/
 }
 
+//更新目标cwnd值
 void
 QuicBbr::UpdateTargetCwnd (Ptr<QuicSocketState> tcb)
 {
@@ -437,6 +464,7 @@ QuicBbr::UpdateTargetCwnd (Ptr<QuicSocketState> tcb)
   m_targetCWnd = InFlight (tcb, m_cWndGain);
 }
 
+//调节CA_RECOVERY状态中的拥塞窗口
 void
 QuicBbr::ModulateCwndForRecovery (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
 {
@@ -452,6 +480,7 @@ QuicBbr::ModulateCwndForRecovery (Ptr<QuicSocketState> tcb, const struct RateSam
     }
 }
 
+//调节BBR_PROBE_RTT中的拥塞窗口
 void
 QuicBbr::ModulateCwndForProbeRTT (Ptr<QuicSocketState> tcb)
 {
@@ -462,6 +491,7 @@ QuicBbr::ModulateCwndForProbeRTT (Ptr<QuicSocketState> tcb)
     }
 }
 
+//根据网络模型更新cwnd
 void
 QuicBbr::SetCwnd (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
 {
@@ -492,6 +522,7 @@ QuicBbr::SetCwnd (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
     }
 }
 
+//更新轮计数相关变量
 void
 QuicBbr::UpdateRound (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
 {
@@ -508,6 +539,8 @@ QuicBbr::UpdateRound (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
     }
 }
 
+
+//更新最大瓶颈带宽
 void
 QuicBbr::UpdateBtlBw (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
 {
@@ -526,7 +559,7 @@ QuicBbr::UpdateBtlBw (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
 }
 
 
-
+//更新BBR网络模型 即更新最大带宽以及最小RTT
 void
 QuicBbr::UpdateModelAndState (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
 {
@@ -539,6 +572,7 @@ QuicBbr::UpdateModelAndState (Ptr<QuicSocketState> tcb, const struct RateSample 
   CheckProbeRTT (tcb);
 }
 
+//更新控制参数，包括cwnd、pacingrate、发送原子
 void
 QuicBbr::UpdateControlParameters (Ptr<QuicSocketState> tcb, const struct RateSample * rs)
 {
@@ -548,6 +582,7 @@ QuicBbr::UpdateControlParameters (Ptr<QuicSocketState> tcb, const struct RateSam
   SetCwnd (tcb, rs);
 }
 
+//状态映射
 std::string
 QuicBbr::WhichState (BbrMode_t mode) const
 {
@@ -567,6 +602,7 @@ QuicBbr::WhichState (BbrMode_t mode) const
     }
 }
 
+//根据状态映射，设置bbr状态
 void
 QuicBbr::SetBbrState (BbrMode_t mode)
 {
@@ -575,6 +611,7 @@ QuicBbr::SetBbrState (BbrMode_t mode)
   m_state = mode;
 }
 
+//获取bbr状态
 uint32_t
 QuicBbr::GetBbrState ()
 {
@@ -582,6 +619,7 @@ QuicBbr::GetBbrState ()
   return m_state.Get ();
 }
 
+//获取当前cwnd增益
 double
 QuicBbr::GetCwndGain ()
 {
@@ -589,6 +627,7 @@ QuicBbr::GetCwndGain ()
   return m_cWndGain;
 }
 
+//获取当前pacing增益
 double
 QuicBbr::GetPacingGain ()
 {
@@ -596,12 +635,15 @@ QuicBbr::GetPacingGain ()
   return m_pacingGain;
 }
 
+
 std::string
 QuicBbr::GetName () const
 {
   return "QuicBbr";
 }
 
+
+//数据包发送时被调用以更新cwnd和pacing rate
 void
 QuicBbr::CongControl (Ptr<QuicSocketState> tcb, const struct RateSample *rs)
 {
@@ -610,16 +652,19 @@ QuicBbr::CongControl (Ptr<QuicSocketState> tcb, const struct RateSample *rs)
   UpdateControlParameters (tcb, rs);
 }
 
+//标记rc rs为未使用
 void
 QuicBbr::CongControl (Ptr<TcpSocketState> tcb,
                       const TcpRateOps::TcpRateConnection &rc,
                       const TcpRateOps::TcpRateSample &rs)
 {
     NS_LOG_FUNCTION (this << tcb);
+    //将局部变量标记为未使用
     NS_UNUSED (rc);
     NS_UNUSED (rs);
 }
 
+//触发应用于特定拥塞状态的事件/计算
 void
 QuicBbr::CongestionStateSet (Ptr<TcpSocketState> tcb,
                              const TcpSocketState::TcpCongState_t newState)
@@ -662,6 +707,7 @@ QuicBbr::CongestionStateSet (Ptr<TcpSocketState> tcb,
     }
 }
 
+//发生拥塞窗口事件时触发事件/计算
 void
 QuicBbr::CwndEvent (Ptr<TcpSocketState> tcb,
                     const TcpSocketState::TcpCAEvent_t event)
@@ -690,6 +736,7 @@ QuicBbr::CwndEvent (Ptr<TcpSocketState> tcb,
     }
 }
 
+//在丢包事件发生后获取慢启动门限值
 uint32_t
 QuicBbr::GetSsThresh (Ptr<const TcpSocketState> tcb, uint32_t bytesInFlight)
 {
@@ -702,6 +749,7 @@ QuicBbr::GetSsThresh (Ptr<const TcpSocketState> tcb, uint32_t bytesInFlight)
   return tcb->m_initialSsThresh;
 }
 
+//提升拥塞窗口 无实质操作 标记tcb和segmentsAcked为未使用
 void
 QuicBbr::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
 {
@@ -709,6 +757,7 @@ QuicBbr::IncreaseWindow (Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
   NS_UNUSED (segmentsAcked);
 }
 
+//当数据包发送时触发
 void
 QuicBbr::OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, bool isAckOnly)
 {
@@ -720,6 +769,7 @@ QuicBbr::OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, b
   tcbd->m_highTxMark = packetNumber;
 }
 
+//收到ack处理函数
 void
 QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
                         std::vector<Ptr<QuicSocketTxItem> > newAcks,
@@ -765,6 +815,7 @@ QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
   CongControl (tcbd, rs);
 }
 
+//丢包处理
 void
 QuicBbr::OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxItem> > lostPackets)
 {
@@ -784,7 +835,7 @@ QuicBbr::OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxIte
       CongestionStateSet (tcbd, TcpSocketState::CA_RECOVERY);
     }
 }
-
+//收到ack后 根据数据包编号进行后续处理 被调用
 void
 QuicBbr::OnPacketAcked (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPacket)
 {
@@ -804,6 +855,7 @@ QuicBbr::OnPacketAcked (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPack
   tcbd->m_rtoCount = 0;
 }
 
+//重传超时验证，一旦重传超时触发后，在处理RTO后的第一个确认时，QUIC将cwnd减小到最小值，即类似于拥塞算法状态初始化
 void
 QuicBbr::OnRetransmissionTimeoutVerified (Ptr<TcpSocketState> tcb)
 {
