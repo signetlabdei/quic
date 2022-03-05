@@ -203,7 +203,7 @@ QuicL5Protocol::DispatchSend (Ptr<Packet> data)
         }
     }
 
-  return sentData;
+  return (sentData >= 0) ? sentData : -1;
 }
 
 int
