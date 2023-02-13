@@ -198,12 +198,16 @@ QuicL5Protocol::DispatchSend (Ptr<Packet> data)
         {
           NS_LOG_INFO (
             "Sending data on stream " << (*jt)->GetStreamId ());
-          sentData = (*jt)->Send ((*it));
+          int streamSentData = (*jt)->Send ((*it));
+          if (streamSentData > 0)
+            {
+              sentData += streamSentData;
+            }
           ++it;
         }
     }
 
-  return sentData;
+  return (sentData > 0) ? sentData : -1;
 }
 
 int

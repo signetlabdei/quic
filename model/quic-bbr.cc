@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2018 NITK Surathkal, 
+ * Copyright (c) 2018 NITK Surathkal,
  * Copyright (c) 2020 SIGNET Lab, Department of Information Engineering, University of Padova
  *
  * This program is free software; you can redistribute it and/or modify
@@ -624,7 +624,7 @@ QuicBbr::CongestionStateSet (Ptr<TcpSocketState> tcb,
 {
   NS_LOG_FUNCTION (this << tcb << newState);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState *> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   if (newState == TcpSocketState::CA_OPEN && !m_isInitialized)
     {
@@ -666,7 +666,7 @@ QuicBbr::CwndEvent (Ptr<TcpSocketState> tcb,
 {
   NS_LOG_FUNCTION (this << tcb << event);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState *> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   if (event == TcpSocketState::CA_EVENT_COMPLETE_CWR)
     {
@@ -711,7 +711,7 @@ QuicBbr::OnPacketSent (Ptr<TcpSocketState> tcb, SequenceNumber32 packetNumber, b
 {
   NS_LOG_FUNCTION (this << packetNumber << isAckOnly);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState *> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   tcbd->m_timeOfLastSentPacket = Now ();
   tcbd->m_highTxMark = packetNumber;
@@ -725,7 +725,7 @@ QuicBbr::OnAckReceived (Ptr<TcpSocketState> tcb, QuicSubheader &ack,
   NS_LOG_FUNCTION (this);
 
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState *> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   tcbd->m_largestAckedPacket = SequenceNumber32 (ack.GetLargestAcknowledged ());
 
@@ -767,7 +767,7 @@ QuicBbr::OnPacketsLost (Ptr<TcpSocketState> tcb, std::vector<Ptr<QuicSocketTxIte
 {
   NS_LOG_LOGIC (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState *> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   auto largestLostPacket = *(lostPackets.end () - 1);
 
@@ -787,7 +787,7 @@ QuicBbr::OnPacketAcked (Ptr<TcpSocketState> tcb, Ptr<QuicSocketTxItem> ackedPack
 {
   NS_LOG_FUNCTION (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   NS_LOG_LOGIC ("Handle possible RTO");
   // If a packet sent prior to RTO was acked, then the RTO  was spurious. Otherwise, inform congestion control.
@@ -806,7 +806,7 @@ QuicBbr::OnRetransmissionTimeoutVerified (Ptr<TcpSocketState> tcb)
 {
   NS_LOG_FUNCTION (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
   NS_LOG_INFO ("Loss state");
   tcbd->m_congState = TcpSocketState::CA_LOSS;
   CongestionStateSet (tcbd, TcpSocketState::CA_LOSS);
