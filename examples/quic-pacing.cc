@@ -22,12 +22,12 @@
 
 // This programs illustrates how QUIC pacing can be used and how user can set
 // pacing rate. The program gives information about each flow like transmitted
-// and received bytes (packets) and throughput of that flow. Currently, it is 
-// using QUIC NewReno-like but in future after having congestion control algorithms 
+// and received bytes (packets) and throughput of that flow. Currently, it is
+// using QUIC NewReno-like but in future after having congestion control algorithms
 // which can change pacing rate can be used.
-
-#include <string>
 #include <fstream>
+#include <string>
+
 #include "ns3/core-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/internet-module.h"
@@ -49,8 +49,18 @@ main (int argc, char *argv[])
   uint32_t maxBytes = 0;
   uint32_t QUICFlows = 1;
   bool isPacingEnabled = true;
-  std::string pacingRate = "4Gbps";
+  std::string pacingRate = "10Mbps";
   uint32_t maxPackets = 0;
+
+
+  // User may find it convenient to enable logging
+  Time::SetResolution (Time::NS);
+  LogComponentEnableAll (LOG_PREFIX_TIME);
+  LogComponentEnableAll (LOG_PREFIX_FUNC);
+  LogComponentEnableAll (LOG_PREFIX_NODE);
+  LogComponentEnable("QuicSocketBase", LOG_LEVEL_DEBUG);
+  LogComponentEnable("QuicPacingExample", LOG_LEVEL_INFO);
+
 
   CommandLine cmd;
   cmd.AddValue ("tracing", "Flag to enable/disable tracing", tracing);
@@ -75,10 +85,11 @@ main (int argc, char *argv[])
   NodeContainer nodes;
   nodes.Create (2);
 
+
   NS_LOG_INFO ("Create channels.");
   PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("40Gbps"));
-  pointToPoint.SetChannelAttribute ("Delay", StringValue ("0.01ms"));
+  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("20Mbps"));
+  pointToPoint.SetChannelAttribute ("Delay", StringValue ("10ms"));
 
   NetDeviceContainer devices;
   devices = pointToPoint.Install (nodes);
@@ -111,9 +122,9 @@ main (int argc, char *argv[])
     }
 
   sinkApps.Start (Seconds (0.0));
-  sinkApps.Stop (Seconds (5));
+  sinkApps.Stop (Seconds (9));
   sourceApps.Start (Seconds (1));
-  sourceApps.Stop (Seconds (5));
+  sourceApps.Stop (Seconds (9));
 
   if (tracing)
     {
@@ -126,7 +137,7 @@ main (int argc, char *argv[])
   Ptr<FlowMonitor> monitor = flowmon.InstallAll ();
 
   NS_LOG_INFO ("Run Simulation.");
-  Simulator::Stop (Seconds (5));
+  Simulator::Stop (Seconds (10));
   Simulator::Run ();
 
   monitor->CheckForLostPackets ();

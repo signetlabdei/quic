@@ -581,12 +581,12 @@ QuicL4Protocol::SetRecvCallback (Callback<void, Ptr<Packet>, const QuicHeader&, 
   for (it = m_quicUdpBindingList.begin (); it != m_quicUdpBindingList.end (); ++it)
     {
       Ptr<QuicUdpBinding> item = *it;
-      if (item->m_quicSocket == sock && item->m_budpSocket != 0)
+      if (item->m_quicSocket == sock && item->m_budpSocket)
         {
           item->m_budpSocket->SetRecvCallback (MakeCallback (&QuicL4Protocol::ForwardUp, this));
           break;
         }
-      else if (item->m_quicSocket == sock && item->m_budpSocket6 != 0)
+      else if (item->m_quicSocket == sock && item->m_budpSocket6)
         {
           item->m_budpSocket6->SetRecvCallback (MakeCallback (&QuicL4Protocol::ForwardUp, this));
           break;
@@ -604,9 +604,9 @@ QuicL4Protocol::NotifyNewAggregate ()
   NS_LOG_FUNCTION (this);
   Ptr<Node> node = this->GetObject<Node> ();
 
-  if (m_node == 0)
+  if (!m_node)
     {
-      if ((node != 0))
+      if (node)
         {
           this->SetNode (node);
           Ptr<QuicSocketFactory> quicFactory = CreateObject<QuicSocketFactory> ();
@@ -716,7 +716,7 @@ Ptr<Socket>
 QuicL4Protocol::CreateUdpSocket ()
 {
   NS_LOG_FUNCTION (this);
-  NS_ASSERT (m_node != 0);
+  NS_ASSERT (m_node);
 
   TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
   Ptr<Socket> udpSocket = Socket::CreateSocket (m_node, tid);
@@ -728,7 +728,7 @@ Ptr<Socket>
 QuicL4Protocol::CreateUdpSocket6 ()
 {
   NS_LOG_FUNCTION (this);
-  NS_ASSERT (m_node != 0);
+  NS_ASSERT (m_node);
 
   TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
   Ptr<Socket> udpSocket6 = Socket::CreateSocket (m_node, tid);
@@ -772,8 +772,8 @@ QuicL4Protocol::Receive (Ptr<Packet> packet,
                          Ipv6Header const &incomingIpHeader,
                          Ptr<Ipv6Interface> interface)
 {
-  NS_LOG_FUNCTION (this << packet << incomingIpHeader.GetSourceAddress () <<
-                   incomingIpHeader.GetDestinationAddress ());
+  NS_LOG_FUNCTION (this << packet << incomingIpHeader.GetSource () <<
+                   incomingIpHeader.GetDestination ());
   NS_FATAL_ERROR ("This call should not be used: QUIC packets need to go through a UDP socket");
   return IpL4Protocol::RX_OK;
 }

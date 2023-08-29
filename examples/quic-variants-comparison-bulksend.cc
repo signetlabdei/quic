@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Authors of the original TCP example: 
+ * Authors of the original TCP example:
  * Justin P. Rohrer, Truc Anh N. Nguyen <annguyen@ittc.ku.edu>, Siddharth Gangadhar <siddharth@ittc.ku.edu>
  * James P.G. Sterbenz <jpgs@ittc.ku.edu>, director
  * ResiliNets Research Group  http://wiki.ittc.ku.edu/resilinets
@@ -28,10 +28,6 @@
  * under grant CNS-0626918 (Postmodern Internet Architecture),
  * NSF grant CNS-1050226 (Multilayer Network Resilience Analysis and Experimentation on GENI),
  * US Department of Defense (DoD), and ITTC at The University of Kansas.
- *
- * “TCP Westwood(+) Protocol Implementation in ns-3”
- * Siddharth Gangadhar, Trúc Anh Ngọc Nguyễn , Greeshma Umapathi, and James P.G. Sterbenz,
- * ICST SIMUTools Workshop on ns-3 (WNS3), Cannes, France, March 2013
  *
  * Adapted to QUIC by:
  *          Alvise De Biasio <alvise.debiasio@gmail.com>
@@ -149,7 +145,7 @@ int main (int argc, char *argv[])
   CommandLine cmd;
   cmd.AddValue ("transport_prot", "Transport protocol to use: TcpNewReno, "
                 "TcpHybla, TcpHighSpeed, TcpHtcp, TcpVegas, TcpScalable, TcpVeno, "
-                "TcpBic, TcpYeah, TcpIllinois, TcpWestwood, TcpWestwoodPlus, TcpLedbat ", transport_prot);
+                "TcpBic, TcpYeah, TcpIllinois, TcpLedbat", transport_prot);
   cmd.AddValue ("error_p", "Packet error rate", error_p);
   cmd.AddValue ("bandwidth", "Bottleneck bandwidth", bandwidth);
   cmd.AddValue ("delay", "Bottleneck delay", delay);
@@ -194,21 +190,11 @@ int main (int argc, char *argv[])
   Config::SetDefault ("ns3::QuicSocketBase::SocketSndBufSize", UintegerValue (1 << 21));
   Config::SetDefault ("ns3::QuicStreamBase::StreamSndBufSize", UintegerValue (1 << 21));
   Config::SetDefault ("ns3::QuicStreamBase::StreamRcvBufSize", UintegerValue (1 << 21));
- 
-  // Select congestion control variant
-  if (transport_prot.compare ("ns3::TcpWestwoodPlus") == 0)
-    { 
-      // TcpWestwoodPlus is not an actual TypeId name; we need TcpWestwood here
-      Config::SetDefault ("ns3::QuicL4Protocol::SocketType", TypeIdValue (TcpWestwood::GetTypeId ()));
-      // the default protocol type in ns3::TcpWestwood is WESTWOOD
-      Config::SetDefault ("ns3::TcpWestwood::ProtocolType", EnumValue (TcpWestwood::WESTWOODPLUS));
-    }
-  else
-    {
-      TypeId tcpTid;
-      NS_ABORT_MSG_UNLESS (TypeId::LookupByNameFailSafe (transport_prot, &tcpTid), "TypeId " << transport_prot << " not found");
-      Config::SetDefault ("ns3::QuicL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (transport_prot)));
-    }
+
+  TypeId tcpTid;
+  NS_ABORT_MSG_UNLESS (TypeId::LookupByNameFailSafe (transport_prot, &tcpTid), "TypeId " << transport_prot << " not found");
+  Config::SetDefault ("ns3::QuicL4Protocol::SocketType", TypeIdValue (TypeId::LookupByName (transport_prot)));
+
 
   // Create gateways, sources, and sinks
   NodeContainer gateways;
@@ -231,7 +217,7 @@ int main (int argc, char *argv[])
   BottleneckLink.SetDeviceAttribute ("DataRate", StringValue (bandwidth));
   BottleneckLink.SetChannelAttribute ("Delay", StringValue (delay));
   BottleneckLink.SetDeviceAttribute ("ReceiveErrorModel", PointerValue (&error_model));
-  
+
   PointToPointHelper AccessLink;
   AccessLink.SetDeviceAttribute ("DataRate", StringValue (access_bandwidth));
   AccessLink.SetChannelAttribute ("Delay", StringValue (access_delay));
@@ -295,7 +281,7 @@ int main (int argc, char *argv[])
       address.NewNetwork ();
       interfaces = address.Assign (devices);
       sink_interfaces.Add (interfaces.Get (1));
-      
+
       devices = BottleneckLink.Install (gateways.Get (0), gateways.Get (1));
       if (queue_disc_type.compare ("ns3::PfifoFastQueueDisc") == 0)
         {
@@ -318,7 +304,7 @@ int main (int argc, char *argv[])
 
   uint16_t port = 50000;
   Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
-  
+
   ApplicationContainer clientApps;
   ApplicationContainer serverApps;
   // applications client and server
@@ -343,9 +329,9 @@ int main (int argc, char *argv[])
       auto n2 = sinks.Get (i);
       auto n1 = sources.Get (i);
       Time t = Seconds(2.100001);
-      Simulator::Schedule (t, &Traces, n2->GetId(), 
+      Simulator::Schedule (t, &Traces, n2->GetId(),
             "./server", ".txt");
-      Simulator::Schedule (t, &Traces, n1->GetId(), 
+      Simulator::Schedule (t, &Traces, n1->GetId(),
             "./client", ".txt");
     }
 
