@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #include "ns3/test.h"
@@ -128,7 +128,7 @@ QuicTxBufferTestCase::DoRun ()
    * -> mark packet 4 as lost
    * -> reset sent list to mark packets 1 and 2 as lost
    * -> check correctness
-   * 
+   *
    */
    Simulator::Schedule (Seconds (0.0), &QuicTxBufferTestCase::TestSetLoss, this);
 
@@ -138,7 +138,7 @@ QuicTxBufferTestCase::DoRun ()
    * -> mark packet 4 as lost
    * -> reset sent list to mark packets 1 and 2 as lost
    * -> check correctness
-   * 
+   *
    */
    Simulator::Schedule (Seconds (0.0), &QuicTxBufferTestCase::TestAddBlocks,
                         this);
@@ -148,7 +148,7 @@ QuicTxBufferTestCase::DoRun ()
    * -> add a Stream 0 packet
    * -> acknowledge everything
    * -> check correctness of bytes in flight count
-   * 
+   *
    */
    Simulator::Schedule (Seconds (0.0), &QuicTxBufferTestCase::TestStream0, this);
    Simulator::Run ();
@@ -163,7 +163,7 @@ QuicTxBufferTestCase::DoRun ()
 
   /*
    * Test the extraction of packets from the Stream TX buffer:
-   * -> add 3 packets 
+   * -> add 3 packets
    * -> extract first 2 packets and readd them again
    * -> extract all packets and test that the buffer is empty
    * -> check correctness of buffer application size and available size
@@ -200,7 +200,7 @@ QuicTxBufferTestCase::TestRetransmission ()
 {
   // create the buffer
   QuicSocketTxBuffer txBuf;
-  
+
   Ptr<QuicSocketTxScheduler> sched = CreateObject<QuicSocketTxScheduler>();
   txBuf.SetScheduler(sched);
   Ptr<QuicSocketState> tcbd;
@@ -211,7 +211,7 @@ QuicTxBufferTestCase::TestRetransmission ()
 
   // send a packet from socket tx buffer
   Ptr<Packet> p1 = Create<Packet> (1196);
-  QuicSubheader sub = QuicSubheader::CreateStreamSubHeader (1, 0, p1->GetSize (), 
+  QuicSubheader sub = QuicSubheader::CreateStreamSubHeader (1, 0, p1->GetSize (),
                                           false, true, false);
   p1->AddHeader (sub);
   txBuf.Add (p1);
@@ -239,7 +239,7 @@ QuicTxBufferTestCase::TestRetransmission ()
 
   // send other two packets from socket tx buffer but mark them as lost on ack
   Ptr<Packet> p2 = Create<Packet> (1196);
-  sub = QuicSubheader::CreateStreamSubHeader (1, 1200, p2->GetSize (), 
+  sub = QuicSubheader::CreateStreamSubHeader (1, 1200, p2->GetSize (),
                                           false, true, false);
   p2->AddHeader (sub);
   txBuf.Add (p2);
@@ -249,7 +249,7 @@ QuicTxBufferTestCase::TestRetransmission ()
   NS_TEST_ASSERT_MSG_EQ(txBuf.BytesInFlight (), 1200, "TxBuf miscalculates size of in flight segments");
 
   Ptr<Packet> p3 = Create<Packet> (1196);
-  sub = QuicSubheader::CreateStreamSubHeader (1, 2400, p3->GetSize (), 
+  sub = QuicSubheader::CreateStreamSubHeader (1, 2400, p3->GetSize (),
                                           false, true, false);
   p3->AddHeader (sub);
   txBuf.Add (p3);
@@ -322,7 +322,7 @@ QuicTxBufferTestCase::TestRejection ()
 
   // Create packet
   Ptr<Packet> p = Create<Packet> (1200);
-  
+
   // Add 5 packets
   bool pos = streamTxBuf.Add(p);
   pos = streamTxBuf.Add(p);
@@ -337,13 +337,13 @@ QuicTxBufferTestCase::TestRejection ()
   // Extract first two packets
   Ptr<Packet> outPkt = streamTxBuf.NextSequence(2400, SequenceNumber32(0));
 
-  NS_TEST_ASSERT_MSG_NE(outPkt, 0, "Failed to extract packets");
+  NS_TEST_ASSERT_MSG_NE(!outPkt, true, "Failed to extract packets");
   NS_TEST_ASSERT_MSG_EQ(outPkt->GetSize(), 2400,  "Wrong packet size");
   NS_TEST_ASSERT_MSG_EQ(streamTxBuf.Available (), 14400, "Wrong available data size");
   NS_TEST_ASSERT_MSG_EQ(streamTxBuf.AppSize (), 3600, "Wrong buffer size");
 
   // Send the extracted packets as frames to socket tx buffer
-  QuicSubheader sub = QuicSubheader::CreateStreamSubHeader (1, 0, outPkt->GetSize (), 
+  QuicSubheader sub = QuicSubheader::CreateStreamSubHeader (1, 0, outPkt->GetSize (),
                          false, true, false);
   outPkt->AddHeader (sub);
   NS_TEST_ASSERT_MSG_EQ(outPkt->GetSize(), 2400 + sub.GetSerializedSize (),  "Wrong packet size");
@@ -356,13 +356,13 @@ QuicTxBufferTestCase::TestRejection ()
   // Extract two packets more
   Ptr<Packet> outPktMore = streamTxBuf.NextSequence(2400, SequenceNumber32(0));
 
-  NS_TEST_ASSERT_MSG_NE(outPktMore, 0, "Failed to extract packets");
+  NS_TEST_ASSERT_MSG_NE(!outPktMore, true, "Failed to extract packets");
   NS_TEST_ASSERT_MSG_EQ(outPktMore->GetSize(), 2400,  "Wrong packet size");
   NS_TEST_ASSERT_MSG_EQ(streamTxBuf.Available (), 16800, "Wrong available data size");
   NS_TEST_ASSERT_MSG_EQ(streamTxBuf.AppSize (), 1200, "Wrong buffer size");
 
   // Add the extracted packets as frames to socket tx buffer but this time is full
-  sub = QuicSubheader::CreateStreamSubHeader (1, 2400, outPktMore->GetSize (), 
+  sub = QuicSubheader::CreateStreamSubHeader (1, 2400, outPktMore->GetSize (),
                          true, true, false);
   outPktMore->AddHeader (sub);
   NS_TEST_ASSERT_MSG_EQ(outPktMore->GetSize(), 2400 + sub.GetSerializedSize (),  "Wrong packet size");
@@ -389,7 +389,7 @@ QuicTxBufferTestCase::TestStreamAdd ()
 
   // Create packet
   Ptr<Packet> p = Create<Packet> (1200);
-  
+
   // Add a packet
   bool pos = txBuf.Add(p);
 
@@ -436,7 +436,7 @@ QuicTxBufferTestCase::TestStreamExtract ()
 
   // Create packet
   Ptr<Packet> p = Create<Packet> (1200);
-  
+
   // Add a packet
   bool pos = txBuf.Add(p);
 
@@ -468,7 +468,7 @@ QuicTxBufferTestCase::TestStreamExtract ()
   //Extract all packets
   outPkt = txBuf.NextSequence(3600, SequenceNumber32(1));
 
-  NS_TEST_ASSERT_MSG_NE(outPkt, 0, "Failed to extract packets");
+  NS_TEST_ASSERT_MSG_NE(!outPkt, true, "Failed to extract packets");
   NS_TEST_ASSERT_MSG_EQ(outPkt->GetSize(), 3600,  "Wrong packet size");
   NS_TEST_ASSERT_MSG_EQ(txBuf.Available (), 18000, "Wrong available data size");
   NS_TEST_ASSERT_MSG_EQ(txBuf.AppSize (), 0, "Wrong buffer size");
@@ -503,18 +503,18 @@ QuicTxBufferTestCase::TestNewBlock ()
   txBuf.Add (p1);
   NS_TEST_ASSERT_MSG_EQ(p1->GetSize (), 1200, "Wrong header size");
 
-  
+
   Ptr<Packet> ptx = txBuf.NextSequence (1200, SequenceNumber32 (1));
-  
+
   NS_TEST_ASSERT_MSG_EQ(ptx->GetSize (), 1200, "TxBuf miscalculates size");
   NS_TEST_ASSERT_MSG_EQ(txBuf.BytesInFlight (), 1200,
                         "TxBuf miscalculates size of in flight segments");
-  
+
   std::vector<uint32_t> additionalAckBlocks;
   std::vector<uint32_t> gaps;
   uint32_t largestAcknowledged = 1;
   additionalAckBlocks.push_back (1);
-  
+
   std::vector<Ptr<QuicSocketTxItem>> acked = txBuf.OnAckUpdate (tcbd,
                                                                 largestAcknowledged,
                                                                 additionalAckBlocks,
@@ -524,29 +524,29 @@ QuicTxBufferTestCase::TestNewBlock ()
                         "TxBuf miscalculates size");
   NS_TEST_ASSERT_MSG_EQ(txBuf.BytesInFlight (), 0,
                         "TxBuf miscalculates size of in flight segments");
-  
+
   // starts over the boundary, but ends earlier
-  
+
   Ptr<Packet> p2 = Create<Packet> (2996);
   sub = QuicSubheader::CreateStreamSubHeader (1, 0, p2->GetSize (), false,
                                               true, false);
   p2->AddHeader (sub);
   txBuf.Add (p2);
-  
+
   ptx = txBuf.NextSequence (1200, SequenceNumber32 (2));
   NS_TEST_ASSERT_MSG_EQ(ptx->GetSize (), 1200,
                         "Returned packet has different size than requested");
   NS_TEST_ASSERT_MSG_EQ(txBuf.BytesInFlight (), 1200,
                         "TxBuf miscalculates size of in flight segments");
-  
+
   ptx = txBuf.NextSequence (3000, SequenceNumber32 (3));
   // Expecting 3000 (added, including QuicSubheader 4) - 1200 (extracted, including QuicSubheader 4)
   // + 6 (QuicSubheader of the new packet, with both the length and the offset)
-  NS_TEST_ASSERT_MSG_EQ(ptx->GetSize (), 1806, 
+  NS_TEST_ASSERT_MSG_EQ(ptx->GetSize (), 1806,
                         "Returned packet has different size than requested");
   NS_TEST_ASSERT_MSG_EQ(txBuf.BytesInFlight (), 3006,
                         "TxBuf miscalculates size of in flight segments");
-  
+
   // starts over the boundary, but ends after
   Ptr<Packet> p3 = Create<Packet> (1196);
   sub = QuicSubheader::CreateStreamSubHeader (1, 0, p3->GetSize (), false,
@@ -563,7 +563,7 @@ QuicTxBufferTestCase::TestNewBlock ()
                         "Returned packet has different size than requested");
   NS_TEST_ASSERT_MSG_EQ(txBuf.BytesInFlight (), 5406,
                         "TxBuf miscalculates size of in flight segments");
-  
+
   additionalAckBlocks.pop_back ();
   largestAcknowledged = 4;
   // Clear everything
@@ -571,7 +571,7 @@ QuicTxBufferTestCase::TestNewBlock ()
                              gaps);
   NS_TEST_ASSERT_MSG_EQ(txBuf.BytesInFlight (), 0,
                         "TxBuf miscalculates size of in flight segments");
-  
+
 }
 
 void

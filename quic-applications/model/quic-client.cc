@@ -119,7 +119,7 @@ QuicClient::StartApplication (void)
 {
   NS_LOG_FUNCTION (this);
 
-  if (m_socket == 0)
+  if (!m_socket)
     {
       TypeId tid = TypeId::LookupByName ("ns3::QuicSocketFactory");
       m_socket = Socket::CreateSocket (GetNode (), tid);
@@ -171,7 +171,7 @@ QuicClient::StopApplication (void)
 {
   NS_LOG_FUNCTION (this);
   Simulator::Cancel (m_sendEvent);
-  if (m_socket != 0)
+  if (m_socket)
     {
       m_socket->Close ();
       m_socket = 0;

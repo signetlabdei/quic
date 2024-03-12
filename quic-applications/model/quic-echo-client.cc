@@ -134,7 +134,7 @@ QuicEchoClient::StartApplication (void)
   NS_LOG_INFO ("##########  QUIC Echo Client START at time " << Simulator::Now ().GetSeconds () << " ##########");
   NS_LOG_FUNCTION (this);
 
-  if (m_socket == 0)
+  if (!m_socket)
     {
       TypeId tid = TypeId::LookupByName ("ns3::QuicSocketFactory");
 
@@ -188,7 +188,7 @@ QuicEchoClient::StopApplication ()
   NS_LOG_INFO ("##########  QUIC Echo Client STOP at time " << Simulator::Now ().GetSeconds () << " ##########");
   NS_LOG_FUNCTION (this);
 
-  if (m_socket != 0)
+  if (m_socket)
     {
       m_socket->Close ();
       m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());

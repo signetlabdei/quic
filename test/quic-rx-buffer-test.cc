@@ -19,7 +19,7 @@
  *          Federico Chiariotti <chiariotti.federico@gmail.com>
  *          Michele Polese <michele.polese@gmail.com>
  *          Davide Marcato <davidemarcato@outlook.com>
- *          
+ *
  */
 
 #include "ns3/test.h"
@@ -90,7 +90,7 @@ QuicRxBufferTestCase::DoRun ()
 
   /*
    * Test the extraction of packets from the Socket RX buffer
-   * -> add 3 packets 
+   * -> add 3 packets
    * -> extract all packets and test that the buffer is empty
    * -> check correctness of buffer application size and available size
    * -> checking availability count
@@ -109,7 +109,7 @@ QuicRxBufferTestCase::DoRun ()
 
   /*
    * Test the extraction of packets from the Stream RX buffer:
-   * -> add 3 packets 
+   * -> add 3 packets
    * -> extract first 2 packets and readd them again
    * -> extract all packets and test that the buffer is empty
    * -> check correctness of buffer application size and available size
@@ -201,7 +201,7 @@ QuicRxBufferTestCase::TestSocketExtract ()
   NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 3600,
                         "Availability differs from expected");
   NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 0, "Buffer size differs from expected");
-  NS_TEST_ASSERT_MSG_EQ(out, 0, "Packet size differs from expected");
+  NS_TEST_ASSERT_MSG_NE(!out, true, "Packet size differs from expected");
 }
 
 void
@@ -243,7 +243,7 @@ QuicRxBufferTestCase::TestStreamAdd ()
   sub.SetOffset (1200);
   pos = rxBuf.Add (p, sub);
   deliverable = rxBuf.GetDeliverable (0);
-  
+
   NS_TEST_ASSERT_MSG_EQ(pos, true, "Failed to add packet");
   NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 15600, "Wrong available data size");
   NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 2400, "Wrong buffer size");
@@ -332,31 +332,31 @@ QuicRxBufferTestCase::TestStreamExtract ()
   sub.SetOffset (2400);
   rxBuf.Add (p, sub);
   deliverable = rxBuf.GetDeliverable (0);
-  
+
   // extract first two packets
   Ptr<Packet> outPkt = rxBuf.Extract(deliverable.second - 1200);
-  
-  NS_TEST_ASSERT_MSG_NE(outPkt, 0, "Failed to extract packets");
+
+  NS_TEST_ASSERT_MSG_NE(!outPkt, true, "Failed to extract packets");
   NS_TEST_ASSERT_MSG_EQ(outPkt->GetSize(),2400,  "Wrong packet size");
   NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 16800, "Wrong available data size");
   NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 1200, "Wrong buffer size");
-  
+
   // insert missing packet
   sub.SetOffset (0);
   rxBuf.Add (outPkt, sub);
   deliverable = rxBuf.GetDeliverable (0);
-  
+
   // extract all packets
   outPkt = rxBuf.Extract(deliverable.second);
-  
-  NS_TEST_ASSERT_MSG_NE(outPkt, 0, "Failed to extract packets");
+
+  NS_TEST_ASSERT_MSG_NE(!outPkt, true, "Failed to extract packets");
   NS_TEST_ASSERT_MSG_EQ(outPkt->GetSize(), 3600,  "Wrong packet size");
   NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 18000, "Wrong available data size");
   NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 0, "Wrong buffer size");
 
   // test empty buffer
   outPkt = rxBuf.Extract(1200);
-  NS_TEST_ASSERT_MSG_EQ(outPkt, 0, "Failed to extract packets");
+  NS_TEST_ASSERT_MSG_NE(!outPkt, true, "Failed to extract packets");
   NS_TEST_ASSERT_MSG_EQ(rxBuf.Available (), 18000, "Wrong available data size");
   NS_TEST_ASSERT_MSG_EQ(rxBuf.Size (), 0, "Wrong buffer size");
 }

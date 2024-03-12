@@ -55,15 +55,15 @@ TypeId QuicSocketTxItem::GetTypeId (void)
   return tid;
 }
 
-QuicSocketTxItem::QuicSocketTxItem () 
-  : m_packet (0), 
-    m_packetNumber (0), 
-    m_lost (false), 
-    m_retrans (false), 
-    m_sacked (false), 
-    m_acked (false), 
-    m_isStream (false), 
-    m_isStream0 (false), 
+QuicSocketTxItem::QuicSocketTxItem ()
+  : m_packet (0),
+    m_packetNumber (0),
+    m_lost (false),
+    m_retrans (false),
+    m_sacked (false),
+    m_acked (false),
+    m_isStream (false),
+    m_isStream0 (false),
     m_lastSent (Time::Min ())
 {
   m_generated = Simulator::Now ();
@@ -71,14 +71,14 @@ QuicSocketTxItem::QuicSocketTxItem ()
 
 QuicSocketTxItem::QuicSocketTxItem (const QuicSocketTxItem &other)
   : m_packet (other.m_packet),
-    m_packetNumber (other.m_packetNumber), 
-    m_lost (other.m_lost), 
-    m_retrans (other.m_retrans), 
-    m_sacked (other.m_sacked), 
-    m_acked (other.m_acked), 
-    m_isStream (other.m_isStream), 
-    m_isStream0 (other.m_isStream0), 
-    m_lastSent (other.m_lastSent), 
+    m_packetNumber (other.m_packetNumber),
+    m_lost (other.m_lost),
+    m_retrans (other.m_retrans),
+    m_sacked (other.m_sacked),
+    m_acked (other.m_acked),
+    m_isStream (other.m_isStream),
+    m_isStream0 (other.m_isStream0),
+    m_lastSent (other.m_lastSent),
     m_generated (other.m_generated)
 {
   m_packet = other.m_packet->Copy ();
@@ -332,7 +332,7 @@ Ptr<Packet> QuicSocketTxBuffer::NextSequence (uint32_t numBytes,
 
   Ptr<QuicSocketTxItem> outItem = GetNewSegment (numBytes);
 
-  if (outItem != nullptr)
+  if (outItem)
     {
       NS_LOG_INFO ("Extracting " << outItem->m_packet->GetSize () << " bytes");
       outItem->m_packetNumber = seq;
@@ -705,7 +705,7 @@ void QuicSocketTxBuffer::UpdatePacketSent (SequenceNumber32 seq, uint32_t sz)
 {
   NS_LOG_FUNCTION (this << seq << sz);
 
-  if (m_tcb == nullptr or sz == 0)
+  if (!m_tcb or sz == 0)
     {
       return;
     }
@@ -716,7 +716,7 @@ void QuicSocketTxBuffer::UpdatePacketSent (SequenceNumber32 seq, uint32_t sz)
       m_tcb->m_deliveredTime = Simulator::Now ();
     }
 
-  Ptr<QuicSocketTxItem> item = nullptr;
+  Ptr<QuicSocketTxItem> item;
   for (auto it = m_sentList.rbegin (); it != m_sentList.rend (); ++it)
     {
       if ((*it)->m_packetNumber == seq)
@@ -725,7 +725,7 @@ void QuicSocketTxBuffer::UpdatePacketSent (SequenceNumber32 seq, uint32_t sz)
           break;
         }
     }
-  NS_ASSERT_MSG (item != nullptr, "not found seq " << seq);
+  NS_ASSERT_MSG (item, "not found seq " << seq);
   item->m_firstSentTime = m_tcb->m_firstSentTime;
   item->m_deliveredTime = m_tcb->m_deliveredTime;
   item->m_isAppLimited = (m_tcb->m_appLimitedUntil > m_tcb->m_delivered);
@@ -736,7 +736,7 @@ void QuicSocketTxBuffer::UpdatePacketSent (SequenceNumber32 seq, uint32_t sz)
 void
 QuicSocketTxBuffer::UpdateAckSent (SequenceNumber32 seq, uint32_t sz)
 {
-  if (m_tcb == nullptr or sz == 0)
+  if (!m_tcb or sz == 0)
     {
       return;
     }
@@ -756,7 +756,7 @@ QuicSocketTxBuffer::UpdateRateSample (Ptr<QuicSocketTxItem> item)
 {
   NS_LOG_FUNCTION (this << item);
 
-  if (m_tcb == nullptr or item->m_deliveredTime == Time::Max ())
+  if (!m_tcb or item->m_deliveredTime == Time::Max ())
     {
       // item already SACKed
       return;
@@ -788,7 +788,7 @@ QuicSocketTxBuffer::GenerateRateSample ()
 {
   NS_LOG_FUNCTION (this);
 
-  if (m_tcb == nullptr)
+  if (!m_tcb)
     {
       return false;
     }

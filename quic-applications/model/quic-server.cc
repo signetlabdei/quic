@@ -121,7 +121,7 @@ QuicServer::StartApplication (void)
 {
   NS_LOG_FUNCTION (this);
 
-  if (m_socket == 0)
+  if (!m_socket)
     {
       TypeId tid = TypeId::LookupByName ("ns3::QuicSocketFactory");
       m_socket = Socket::CreateSocket (GetNode (), tid);
@@ -136,7 +136,7 @@ QuicServer::StartApplication (void)
   m_socket->Listen ();
   m_socket->SetRecvCallback (MakeCallback (&QuicServer::HandleRead, this));
 
-  if (m_socket6 == 0)
+  if (!m_socket6)
     {
       TypeId tid = TypeId::LookupByName ("ns3::QuicSocketFactory");
       m_socket6 = Socket::CreateSocket (GetNode (), tid);
@@ -158,7 +158,7 @@ QuicServer::StopApplication ()
 {
   NS_LOG_FUNCTION (this);
 
-  if (m_socket != 0)
+  if (m_socket)
     {
       m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
