@@ -88,7 +88,7 @@ QuicEchoServer::StartApplication (void)
   //il client ha bisogno di un socket udp per ogni socket quic
   //il server per tutti i socket quic gli basta un socket udp che ascolta
 
-  if (m_socket == 0)
+  if (!m_socket)
     {
       //NS_LOG_INFO("Need to create IPv4");
       TypeId tid = TypeId::LookupByName ("ns3::QuicSocketFactory");
@@ -106,7 +106,7 @@ QuicEchoServer::StartApplication (void)
         }
     }
 
-//  if (m_socket6 == 0)
+//  if (!m_socket6)
 //    {
 //      NS_LOG_INFO("Need to create IPv6");
 //      TypeId tid = TypeId::LookupByName ("ns3::QuicSocketFactory");
@@ -132,12 +132,12 @@ QuicEchoServer::StopApplication ()
 {
   NS_LOG_INFO ("##########  QUIC Echo Server STOP at time " << Simulator::Now ().GetSeconds () << " ##########");
   NS_LOG_FUNCTION (this);
-  if (m_socket != 0)
+  if (m_socket)
     {
       m_socket->Close ();
       m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
-  if (m_socket6 != 0)
+  if (m_socket6)
     {
       m_socket6->Close ();
       m_socket6->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());

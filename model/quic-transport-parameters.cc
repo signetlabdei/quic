@@ -126,6 +126,8 @@ QuicTransportParameters::Deserialize (Buffer::Iterator start)
   m_initial_max_stream_id_uni = i.ReadNtohU32 ();
 
   NS_LOG_INFO ("Deserialize::Serialized Size " << CalculateHeaderLength ());
+  NS_LOG_INFO(m_initial_max_stream_id_uni);
+  NS_LOG_INFO(m_initial_max_stream_id_bidi);
 
   return GetSerializedSize ();
 }

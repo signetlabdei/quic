@@ -147,7 +147,7 @@ QuicSocketBase::GetTypeId (void)
     //				   UintegerValue (0),
     //				   MakeUintegerAccessor (&QuicSocketBase::m_stateless_reset_token),
     //				   MakeUintegerChecker<uint128_t> ())
-    .AddAttribute ("AckDelayExponent", "Ack Delay Exponent", 
+    .AddAttribute ("AckDelayExponent", "Ack Delay Exponent",
                    UintegerValue (3),
                    MakeUintegerAccessor (&QuicSocketBase::m_ack_delay_exponent),
                    MakeUintegerChecker<uint8_t> ())
@@ -168,7 +168,7 @@ QuicSocketBase::GetTypeId (void)
                    DoubleValue (9 / 8),
                    MakeDoubleAccessor (&QuicSocketState::m_kTimeReorderingFraction),
                    MakeDoubleChecker<double> (0))
-    .AddAttribute ("kUsingTimeLossDetection", "Whether time based loss detection is in use", 
+    .AddAttribute ("kUsingTimeLossDetection", "Whether time based loss detection is in use",
                    BooleanValue (false),
                    MakeBooleanAccessor (&QuicSocketState::m_kUsingTimeLossDetection),
                    MakeBooleanChecker ())
@@ -618,19 +618,19 @@ QuicSocketBase::~QuicSocketBase (void)
   NS_LOG_FUNCTION (this);
 
   m_node = 0;
-  if (m_endPoint != nullptr)
+  if (m_endPoint)
     {
-      NS_ASSERT (m_quicl4 != nullptr);
-      NS_ASSERT (m_endPoint != nullptr);
+      NS_ASSERT (m_quicl4);
+      NS_ASSERT (m_endPoint);
       m_quicl4->DeAllocate (m_endPoint);
-      NS_ASSERT (m_endPoint == nullptr);
+      NS_ASSERT (!m_endPoint);
     }
-  if (m_endPoint6 != nullptr)
+  if (m_endPoint6)
     {
-      NS_ASSERT (m_quicl4 != nullptr);
-      NS_ASSERT (m_endPoint6 != nullptr);
+      NS_ASSERT (m_quicl4);
+      NS_ASSERT (m_endPoint6);
       m_quicl4->DeAllocate (m_endPoint6);
-      NS_ASSERT (m_endPoint6 == nullptr);
+      NS_ASSERT (!m_endPoint6);
     }
   m_quicl4 = 0;
   //CancelAllTimers ();
@@ -776,19 +776,19 @@ QuicSocketBase::Connect (const Address & address)
 
   if (InetSocketAddress::IsMatchingType (address))
     {
-      if (m_endPoint == nullptr)
+      if (!m_endPoint)
         {
           if (Bind () == -1)
             {
-              NS_ASSERT (m_endPoint == nullptr);
+              NS_ASSERT (!m_endPoint);
               return -1; // Bind() failed
             }
-          NS_ASSERT (m_endPoint != nullptr);
+          NS_ASSERT (m_endPoint);
         }
       InetSocketAddress transport = InetSocketAddress::ConvertFrom (address);
       m_endPoint->SetPeer (transport.GetIpv4 (), transport.GetPort ());
       //SetIpTos (transport.GetTos ());
-      m_endPoint6 = nullptr;
+      // m_endPoint6 = nullptr;
 
       // Get the appropriate local address and port number from the routing protocol and set up endpoint
       /*if (SetupEndpoint () != 0)
@@ -809,17 +809,17 @@ QuicSocketBase::Connect (const Address & address)
           return Connect (InetSocketAddress (v4Addr, transport.GetPort ()));
         }
 
-      if (m_endPoint6 == nullptr)
+      if (!m_endPoint6)
         {
           if (Bind6 () == -1)
             {
-              NS_ASSERT (m_endPoint6 == nullptr);
+              NS_ASSERT (!m_endPoint6);
               return -1; // Bind() failed
             }
-          NS_ASSERT (m_endPoint6 != nullptr);
+          NS_ASSERT (m_endPoint6);
         }
       m_endPoint6->SetPeer (v6Addr, transport.GetPort ());
-      m_endPoint = nullptr;
+      // m_endPoint = nullptr;
 
       // Get the appropriate local address and port number from the routing protocol and set up endpoint
       /*if (SetupEndpoint6 () != 0)
@@ -840,7 +840,7 @@ QuicSocketBase::Connect (const Address & address)
       m_socketType = CLIENT;
     }
 
-  if (m_quicl5 == 0)
+  if (!m_quicl5)
     {
       m_quicl5 = CreateStreamController ();
       m_quicl5->CreateStream (QuicStream::BIDIRECTIONAL, 0);   // Create Stream 0 (necessary)
@@ -1291,7 +1291,7 @@ QuicSocketBase::SendDataPacket (SequenceNumber32 packetNumber,
   if (m_txBuffer->GetNumFrameStream0InBuffer () > 0)
     {
       p = m_txBuffer->NextStream0Sequence (packetNumber);
-      NS_ABORT_MSG_IF (p == 0, "No packet for stream 0 in the buffer!");
+      NS_ABORT_MSG_IF (!p, "No packet for stream 0 in the buffer!");
     }
   else
     {
@@ -1661,13 +1661,13 @@ QuicSocketBase::RecvFrom (uint32_t maxSize, uint32_t flags,
 
   Ptr<Packet> packet = m_rxBuffer->Extract (maxSize);
 
-  if (packet != nullptr && packet->GetSize () != 0)
+  if (packet && packet->GetSize () != 0)
     {
-      if (m_endPoint != nullptr)
+      if (m_endPoint)
         {
           fromAddress = InetSocketAddress (m_endPoint->GetPeerAddress (), m_endPoint->GetPeerPort ());
         }
-      else if (m_endPoint6 != nullptr)
+      else if (m_endPoint6)
         {
           fromAddress = Inet6SocketAddress (m_endPoint6->GetPeerAddress (), m_endPoint6->GetPeerPort ());
         }
@@ -1857,7 +1857,7 @@ QuicSocketBase::SetupCallback (void)
 {
   NS_LOG_FUNCTION (this);
 
-  if (m_quicl4 == 0)
+  if (!m_quicl4)
     {
       return -1;
     }
@@ -2065,6 +2065,10 @@ QuicSocketBase::SendInitialHandshake (uint8_t type,
       NS_LOG_INFO ("Create ZRTT_PROTECTED");
       Ptr<Packet> p = Create<Packet> ();
       p->AddHeader (OnSendingTransportParameters ());
+
+      // Set initial congestion window and Ssthresh
+      m_tcb->m_cWnd = m_tcb->m_initialCWnd;
+      m_tcb->m_ssThresh = m_tcb->m_initialSsThresh;
 
       m_quicl5->DispatchSend (p, 0);
 
@@ -2399,8 +2403,6 @@ QuicSocketBase::OnReceivedAckFrame (QuicSubheader &sub)
   // try to send more data
   SendPendingData (m_connected);
 
-  // Compute timers
-  SetReTxTimeout ();
 }
 
 QuicTransportParameters
@@ -2460,7 +2462,6 @@ QuicSocketBase::OnReceivedTransportParameters (
       // TODO AbortConnection(QuicSubheader::TransportErrorCodes_t::TRANSPORT_PARAMETER_ERROR, "Invalid Initial Max Stream Id Uni value provided from Client");
       return;
     }
-
   if (transportParameters.GetMaxPacketSize ()
       < QuicSocketBase::MIN_INITIAL_PACKET_SIZE
       or transportParameters.GetMaxPacketSize () > 65527)
@@ -2988,7 +2989,7 @@ void
 QuicSocketBase::SetCongestionControlAlgorithm (Ptr<TcpCongestionOps> algo)
 {
   NS_LOG_FUNCTION (this << algo);
-  if (DynamicCast<QuicCongestionOps> (algo) != 0)
+  if (DynamicCast<QuicCongestionOps> (algo))
     {
       NS_LOG_INFO ("Non-legacy congestion control");
       m_quicCongestionControlLegacy = false;

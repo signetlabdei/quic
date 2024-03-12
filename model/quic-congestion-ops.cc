@@ -89,7 +89,7 @@ QuicCongestionOps::OnPacketSent (Ptr<TcpSocketState> tcb,
 {
   NS_LOG_FUNCTION (this << packetNumber << isAckOnly);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   tcbd->m_timeOfLastSentPacket = Now ();
   tcbd->m_highTxMark = packetNumber;
@@ -104,7 +104,7 @@ QuicCongestionOps::OnAckReceived (Ptr<TcpSocketState> tcb,
   NS_LOG_FUNCTION (this << rs);
 
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   tcbd->m_largestAckedPacket = SequenceNumber32 (
     ack.GetLargestAcknowledged ());
@@ -137,7 +137,7 @@ QuicCongestionOps::UpdateRtt (Ptr<TcpSocketState> tcb, Time latestRtt,
 {
   NS_LOG_FUNCTION (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   // m_minRtt ignores ack delay.
   tcbd->m_minRtt = std::min (tcbd->m_minRtt, latestRtt);
@@ -178,7 +178,7 @@ QuicCongestionOps::OnPacketAcked (Ptr<TcpSocketState> tcb,
 {
   NS_LOG_FUNCTION (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   OnPacketAckedCC (tcbd, ackedPacket);
 
@@ -200,7 +200,7 @@ QuicCongestionOps::InRecovery (Ptr<TcpSocketState> tcb,
 {
   NS_LOG_FUNCTION (this << packetNumber.GetValue ());
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   return packetNumber <= tcbd->m_endOfRecovery;
 }
@@ -211,7 +211,7 @@ QuicCongestionOps::OnPacketAckedCC (Ptr<TcpSocketState> tcb,
 {
   NS_LOG_FUNCTION (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   NS_LOG_INFO ("Updating congestion window");
   if (InRecovery (tcb, ackedPacket->m_packetNumber))
@@ -245,7 +245,7 @@ QuicCongestionOps::OnPacketsLost (
 {
   NS_LOG_LOGIC (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
 
   auto largestLostPacket = *(lostPackets.end () - 1);
 
@@ -269,7 +269,7 @@ QuicCongestionOps::OnRetransmissionTimeoutVerified (
 {
   NS_LOG_FUNCTION (this);
   Ptr<QuicSocketState> tcbd = dynamic_cast<QuicSocketState*> (&(*tcb));
-  NS_ASSERT_MSG (tcbd != 0, "tcb is not a QuicSocketState");
+  NS_ASSERT_MSG (tcbd, "tcb is not a QuicSocketState");
   NS_LOG_INFO ("Loss state");
   tcbd->m_cWnd = tcbd->m_kMinimumWindow;
   tcbd->m_congState = TcpSocketState::CA_LOSS;

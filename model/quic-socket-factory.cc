@@ -53,7 +53,7 @@ QuicSocketFactory::QuicSocketFactory ()
 QuicSocketFactory::~QuicSocketFactory ()
 {
   NS_LOG_INFO ("Destroying QuicSocketFactory");
-  NS_ASSERT (m_quicl4 == 0);
+  NS_ASSERT (!m_quicl4);
 }
 
 void

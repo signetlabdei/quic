@@ -204,7 +204,7 @@ QuicStreamTxBuffer::NextSequence (uint32_t numBytes, const SequenceNumber32 seq)
 
   Ptr<QuicStreamTxItem> outItem = GetNewSegment (numBytes);
 
-  if (outItem != nullptr)
+  if (outItem)
     {
       outItem->m_packetNumberSequence = seq;
       outItem->m_lastSent = Simulator::Now ();
